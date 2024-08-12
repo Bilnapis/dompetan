@@ -1,24 +1,22 @@
-import React from 'react'
+import React, { memo } from 'react'
 import { View, StyleSheet, Text } from 'react-native'
 
-interface IHomeScreenProps {
-    
+
+
+const HomeScreen = () => {
+  return (
+    <View style={styles.container}>
+      <Text>Home Screen</Text>
+    </View>
+  )
 }
 
-const HomeScreen = (props: IHomeScreenProps) => {
-     return (
-         <View style={styles.container}>
-            <Text>Home Screen</Text>
-         </View>
-     )
-}
-
-export default HomeScreen
+export default memo(HomeScreen)
 
 const styles = StyleSheet.create({
-  container: { 
-    alignItems: "center", 
-    flex: 1, 
+  container: {
+    alignItems: "center",
+    flex: 1,
     justifyContent: "center"
   }
 })
