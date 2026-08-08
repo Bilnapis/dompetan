@@ -36,6 +36,7 @@ export interface Category {
   user_id: string
   name: string
   type: CategoryType
+  icon?: string | null
   created_at: string
 }
 

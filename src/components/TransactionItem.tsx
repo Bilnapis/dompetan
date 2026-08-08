@@ -27,6 +27,8 @@ export function TransactionItem({
       >
         {isTransfer ? (
           <ArrowRightLeft className="w-5 h-5 text-primary-400" />
+        ) : transaction.category?.icon ? (
+          <span className="text-xl leading-none">{transaction.category.icon}</span>
         ) : isIncome ? (
           <TrendingUp className="w-5 h-5 text-income" />
         ) : (

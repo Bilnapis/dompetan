@@ -95,7 +95,11 @@ export function CategoriesPage() {
                 w-9 h-9 rounded-xl flex items-center justify-center shrink-0
                 ${cat.type === 'income' ? 'bg-income/10' : 'bg-expense/10'}
               `}>
-                <Tag className={`w-4 h-4 ${cat.type === 'income' ? 'text-income' : 'text-expense'}`} />
+                {cat.icon ? (
+                  <span className="text-lg leading-none">{cat.icon}</span>
+                ) : (
+                  <Tag className={`w-4 h-4 ${cat.type === 'income' ? 'text-income' : 'text-expense'}`} />
+                )}
               </div>
 
               <span className="flex-1 text-sm font-medium text-dark-200">{cat.name}</span>

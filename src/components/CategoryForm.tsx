@@ -15,6 +15,7 @@ interface CategoryFormProps {
 export function CategoryForm({ isOpen, onClose, onSubmit, editData, defaultType = 'expense' }: CategoryFormProps) {
   const [name, setName] = useState('')
   const [type, setType] = useState<CategoryType>(defaultType)
+  const [icon, setIcon] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -22,9 +23,11 @@ export function CategoryForm({ isOpen, onClose, onSubmit, editData, defaultType 
     if (editData) {
       setName(editData.name)
       setType(editData.type)
+      setIcon(editData.icon || '')
     } else {
       setName('')
       setType(defaultType)
+      setIcon('')
       setError('')
     }
   }, [editData, isOpen, defaultType])
@@ -47,8 +50,8 @@ export function CategoryForm({ isOpen, onClose, onSubmit, editData, defaultType 
     setLoading(true)
 
     const data = editData
-      ? { name: name.trim() }
-      : { name: name.trim(), type }
+      ? { name: name.trim(), icon }
+      : { name: name.trim(), type, icon }
 
     const result = await onSubmit(data)
 
@@ -118,6 +121,15 @@ export function CategoryForm({ isOpen, onClose, onSubmit, editData, defaultType 
             </div>
           </div>
         )}
+
+        {/* Icon Picker (Emoji) */}
+        <Input
+          label="Icon (Emoji)"
+          placeholder="Contoh: 🍔"
+          value={icon}
+          onChange={(e) => setIcon(e.target.value)}
+          maxLength={2}
+        />
 
         <div className="flex gap-3 pt-2">
           <Button type="button" variant="secondary" fullWidth onClick={handleClose}>
