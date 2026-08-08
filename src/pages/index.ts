@@ -1,0 +1,6 @@
+export { LoginPage } from './LoginPage'
+export { RegisterPage } from './RegisterPage'
+export { DashboardPage } from './DashboardPage'
+export { TransactionsPage } from './TransactionsPage'
+export { CategoriesPage } from './CategoriesPage'
+export { ProfilePage } from './ProfilePage'
