@@ -1,5 +1,5 @@
 -- =============================================
--- KeuanganKu - Database Schema
+-- Dompetan - Database Schema
 -- Jalankan skrip ini di Supabase SQL Editor
 -- =============================================
 

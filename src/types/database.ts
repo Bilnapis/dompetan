@@ -1,5 +1,5 @@
 /* ========================================
-   KeuanganKu - Database Type Definitions
+   Dompetan - Database Type Definitions
    ======================================== */
 
 // ── Enum Types ──────────────────────────

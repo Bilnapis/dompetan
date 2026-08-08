@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'KeuanganKu - Pencatatan Keuangan Pribadi',
-        short_name: 'KeuanganKu',
+        name: 'Dompetan - Pencatatan Keuangan Pribadi',
+        short_name: 'Dompetan',
         description: 'Aplikasi pencatatan keuangan pribadi yang simpel dan powerful',
         theme_color: '#10B981',
         background_color: '#0F172A',

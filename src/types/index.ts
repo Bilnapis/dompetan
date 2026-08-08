@@ -1,4 +1,4 @@
-// KeuanganKu - Type Definitions
+// Dompetan - Type Definitions
 // Barrel export file
 
 export type {
