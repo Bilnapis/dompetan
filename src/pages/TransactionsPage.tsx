@@ -80,7 +80,7 @@ export function TransactionsPage() {
     endDate: dateRange.end,
   });
 
-  const { categories } = useCategories();
+  useCategories();
 
   // Group and filter transactions by date
   const groupedTransactions = useMemo(() => {

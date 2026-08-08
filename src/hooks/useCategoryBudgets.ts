@@ -46,12 +46,12 @@ export function useCategoryBudgets(categoryId?: string, year?: string) {
       // Upsert the budget for the specific month
       const { error } = await supabase
         .from('category_budgets')
-        .upsert({
+        .upsert([{
           user_id: user.id,
           category_id: categoryId,
           month,
           amount,
-        }, {
+        }] as any, {
           onConflict: 'user_id,category_id,month'
         })
         

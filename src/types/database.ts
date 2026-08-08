@@ -80,7 +80,7 @@ export interface TransactionInsert {
   user_id?: string
 }
 
-export type CategoryBudgetInsert = Omit<CategoryBudget, 'id' | 'created_at' | 'user_id'>
+export type CategoryBudgetInsert = Omit<CategoryBudget, 'id' | 'created_at'>
 
 // ── Update Types (partial for editing) ──
 
@@ -135,7 +135,7 @@ export interface Database {
       }
       category_budgets: {
         Row: CategoryBudget
-        Insert: CategoryBudgetInsert & { user_id: string }
+        Insert: CategoryBudgetInsert
         Update: CategoryBudgetUpdate
       }
     }

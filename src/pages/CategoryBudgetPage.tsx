@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 import { useCategories } from '../hooks/useCategories'
@@ -17,9 +17,6 @@ export function CategoryBudgetPage() {
   
   const { budgets, setCategoryBudget } = useCategoryBudgets(id, year)
 
-  // State for the modal/prompt to set budget
-  const [editingMonth, setEditingMonth] = useState<string | null>(null)
-  const [editValue, setEditValue] = useState('')
 
   // If category is not found (e.g. invalid ID or still loading)
   if (!category && categories.length > 0) {
