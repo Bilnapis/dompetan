@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useViewportHeight } from '../../hooks/useViewportHeight'
 import { X } from 'lucide-react'
 
 interface ModalProps {
@@ -16,6 +17,8 @@ const sizeClasses = {
 }
 
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+  // Keep viewport height up‑to‑date for mobile keyboards
+  useViewportHeight()
   // Close on Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -51,7 +54,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
           rounded-t-2xl sm:rounded-2xl
           shadow-2xl shadow-black/50
           animate-slide-up
-          max-h-[85vh] overflow-y-auto
+          max-h-[calc(var(--vh,1vh)*100-80px)] overflow-y-auto
         `}
       >
         {/* Header */}
@@ -68,7 +71,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         )}
 
         {/* Body */}
-        <div className="p-5">
+        <div className="p-5 pb-20">
           {children}
         </div>
       </div>
