@@ -73,7 +73,8 @@ export function BudgetView({ categories, transactions, dateRange, filterMonth, o
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // 5px movement before drag starts, helps with clicking
+        delay: 250, // 250ms hold to start drag
+        tolerance: 5, // 5px movement cancels the hold
       },
     }),
     useSensor(KeyboardSensor, {

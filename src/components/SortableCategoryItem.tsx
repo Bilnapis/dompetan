@@ -1,6 +1,5 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
 import type { Category } from '../types/database';
 import { formatCurrency } from '../lib/helpers';
 
@@ -43,20 +42,12 @@ export function SortableCategoryItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex gap-2 items-start p-2 -mx-2 rounded-xl transition-colors ${
+      className={`flex gap-2 items-start p-2 -mx-2 rounded-xl transition-colors cursor-grab active:cursor-grabbing touch-none ${
         isDragging ? 'bg-dark-800 shadow-lg' : 'hover:bg-dark-800/30 bg-transparent'
       }`}
+      {...attributes}
+      {...listeners}
     >
-      {/* Drag Handle */}
-      <button
-        type="button"
-        className="mt-1 p-1 text-dark-500 hover:text-dark-300 cursor-grab active:cursor-grabbing touch-none"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="w-4 h-4" />
-      </button>
-
       {/* Content */}
       <div className="flex-1 flex gap-3 items-start">
         {/* Left Side */}
