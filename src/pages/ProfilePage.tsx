@@ -1,9 +1,11 @@
-import { LogOut, Mail, Shield } from 'lucide-react'
+import { LogOut, Mail, Shield, Download, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { usePWAInstall } from '../hooks'
 import { Button } from '../components/ui/Button'
 
 export function ProfilePage() {
   const { user, signOut } = useAuth()
+  const { isInstallable, isInstalled, promptInstall } = usePWAInstall()
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-6">
@@ -32,6 +34,43 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* PWA Install */}
+      {(isInstallable || isInstalled) && (
+        <div className="glass rounded-2xl p-5 mb-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-500/15 flex items-center justify-center">
+              <Download className="w-5 h-5 text-primary-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-dark-100">Aplikasi Dompetan</p>
+              <p className="text-xs text-dark-400">
+                {isInstalled ? 'Sudah terinstall di perangkat ini' : 'Install untuk akses lebih cepat'}
+              </p>
+            </div>
+          </div>
+          {!isInstalled && (
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={promptInstall}
+              icon={<Download className="w-4 h-4" />}
+            >
+              Install Aplikasi
+            </Button>
+          )}
+          {isInstalled && (
+            <Button
+              variant="secondary"
+              fullWidth
+              disabled
+              icon={<CheckCircle2 className="w-4 h-4 text-primary-400" />}
+            >
+              Terinstall
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Logout */}
       <Button
