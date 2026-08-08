@@ -219,7 +219,6 @@ export function TransactionsPage() {
                       key={tx.id}
                       transaction={tx}
                       onEdit={handleEdit}
-                      onDelete={handleDelete}
                     />
                   ))}
                 </div>
@@ -258,6 +257,7 @@ export function TransactionsPage() {
         }}
         onSubmit={handleSubmit}
         editData={editingTx}
+        onDelete={handleDelete}
       />
     </div>
   );

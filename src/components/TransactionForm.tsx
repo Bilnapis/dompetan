@@ -13,6 +13,7 @@ interface TransactionFormProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSubmit: (data: any) => Promise<{ error: string | null }>;
   editData?: TransactionWithDetails | null;
+  onDelete?: (id: string) => void;
 }
 
 export function TransactionForm({
@@ -20,6 +21,7 @@ export function TransactionForm({
   onClose,
   onSubmit,
   editData,
+  onDelete,
 }: TransactionFormProps) {
   const [type, setType] = useState<CategoryType | "transfer">("expense");
   const [amount, setAmount] = useState("");
@@ -280,6 +282,19 @@ export function TransactionForm({
 
         {/* Submit */}
         <div className="flex gap-3 pt-2">
+          {editData && onDelete && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                onDelete(editData.id);
+                handleClose();
+              }}
+              className="!px-3 text-expense hover:bg-expense/10 hover:text-expense hover:border-expense/30"
+            >
+              Hapus
+            </Button>
+          )}
           <Button
             type="button"
             variant="secondary"

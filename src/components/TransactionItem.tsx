@@ -1,23 +1,24 @@
-import { TrendingUp, TrendingDown, Pencil, Trash2, Wallet, ArrowRightLeft } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, ArrowRightLeft } from "lucide-react";
 import type { TransactionWithDetails } from "../types/database";
 import { formatCurrency, formatDateShort } from "../lib/helpers";
 
 interface TransactionItemProps {
   transaction: TransactionWithDetails;
   onEdit: (transaction: TransactionWithDetails) => void;
-  onDelete: (id: string) => void;
 }
 
 export function TransactionItem({
   transaction,
   onEdit,
-  onDelete,
 }: TransactionItemProps) {
   const isIncome = transaction.type === "income";
   const isTransfer = transaction.category_id === null;
 
   return (
-    <div className="group flex items-center gap-3 px-4 py-3 hover:bg-dark-800/50 rounded-xl transition-all duration-200">
+    <div
+      onClick={() => onEdit(transaction)}
+      className="group flex items-center gap-3 px-4 py-3 hover:bg-dark-800/50 rounded-xl transition-all duration-200 cursor-pointer active:scale-[0.98]"
+    >
       {/* Icon */}
       <div
         className={`
@@ -66,28 +67,6 @@ export function TransactionItem({
         <p className="text-[10px] text-dark-500">
           {formatDateShort(transaction.transaction_date)}
         </p>
-      </div>
-
-      {/* Actions (visible on hover / always on mobile) */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-0">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(transaction);
-          }}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-dark-400 hover:text-primary-400 hover:bg-dark-700 transition-colors"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(transaction.id);
-          }}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-dark-400 hover:text-expense hover:bg-dark-700 transition-colors"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
       </div>
     </div>
   );

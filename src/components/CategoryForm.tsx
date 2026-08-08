@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Modal } from './ui/Modal'
 import { Button } from './ui/Button'
 import { Input } from './ui/Input'
+import EmojiPicker, { Theme, EmojiStyle } from 'emoji-picker-react'
 import type { Category, CategoryInsert, CategoryUpdate, CategoryType } from '../types/database'
 
 interface CategoryFormProps {
@@ -16,6 +17,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, editData, defaultType 
   const [name, setName] = useState('')
   const [type, setType] = useState<CategoryType>(defaultType)
   const [icon, setIcon] = useState<string>('')
+  const [showPicker, setShowPicker] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -122,14 +124,38 @@ export function CategoryForm({ isOpen, onClose, onSubmit, editData, defaultType 
           </div>
         )}
 
-        {/* Icon Picker (Emoji) */}
-        <Input
-          label="Icon (Emoji)"
-          placeholder="Contoh: 🍔"
-          value={icon}
-          onChange={(e) => setIcon(e.target.value)}
-          maxLength={2}
-        />
+        {/* Emoji Picker Library */}
+        <div>
+          <label className="block text-sm font-medium text-dark-300 mb-1.5">Icon (Emoji)</label>
+          <div className="flex gap-3 items-center">
+            <button
+              type="button"
+              onClick={() => setShowPicker(!showPicker)}
+              className="w-12 h-12 rounded-xl bg-dark-800 border border-dark-700 flex items-center justify-center text-2xl hover:bg-dark-700 transition-colors shrink-0"
+            >
+              {icon || '🎯'}
+            </button>
+            <span className="text-sm text-dark-400">
+              {icon ? 'Klik icon untuk mengganti' : 'Klik icon di sebelah kiri untuk memilih'}
+            </span>
+          </div>
+          
+          {showPicker && (
+            <div className="mt-3 relative z-50 rounded-xl overflow-hidden shadow-2xl">
+              <EmojiPicker
+                onEmojiClick={(emojiData) => {
+                  setIcon(emojiData.emoji)
+                  setShowPicker(false)
+                }}
+                theme={Theme.DARK}
+                emojiStyle={EmojiStyle.NATIVE}
+                width="100%"
+                height={350}
+                searchPlaceholder="Cari emoji..."
+              />
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-3 pt-2">
           <Button type="button" variant="secondary" fullWidth onClick={handleClose}>

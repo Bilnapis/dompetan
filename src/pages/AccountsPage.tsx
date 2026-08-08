@@ -97,7 +97,7 @@ export function AccountsPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => handleEdit(acc)}
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-dark-400 hover:text-primary-400 hover:bg-dark-700 transition-colors"

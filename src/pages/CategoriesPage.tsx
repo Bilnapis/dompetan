@@ -102,9 +102,9 @@ export function CategoriesPage() {
                 )}
               </div>
 
-              <span className="flex-1 text-sm font-medium text-dark-200">{cat.name}</span>
+              <span className="flex-1 min-w-0 text-sm font-medium text-dark-200 truncate">{cat.name}</span>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => handleEdit(cat)}
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-dark-400 hover:text-primary-400 hover:bg-dark-700 transition-colors"
