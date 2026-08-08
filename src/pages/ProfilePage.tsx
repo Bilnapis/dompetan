@@ -1,5 +1,6 @@
-import { LogOut, Mail, Shield, Download, CheckCircle2, Settings as SettingsIcon } from 'lucide-react'
+import { LogOut, Mail, Shield, Download, CheckCircle2, Settings as SettingsIcon, Tag, ChevronRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useSettings } from '../contexts/SettingsContext'
 import { usePWAInstall } from '../hooks'
@@ -8,6 +9,7 @@ import { Input, Select } from '../components/ui/Input'
 import type { WeekendBehavior } from '../types/database'
 
 export function ProfilePage() {
+  const navigate = useNavigate()
   const { user, signOut } = useAuth()
   const { settings, updateSettings, loading: settingsLoading } = useSettings()
   const { isInstallable, isInstalled, promptInstall } = usePWAInstall()
@@ -129,6 +131,23 @@ export function ProfilePage() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Categories Setting Card */}
+      <div 
+        onClick={() => navigate('/categories')}
+        className="glass rounded-2xl p-5 mb-4 flex items-center justify-between cursor-pointer hover:bg-dark-800/50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-expense/15 flex items-center justify-center">
+            <Tag className="w-5 h-5 text-expense" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-dark-100">Pengaturan Kategori</p>
+            <p className="text-xs text-dark-400">Atur kategori pemasukan & pengeluaran</p>
+          </div>
+        </div>
+        <ChevronRight className="w-5 h-5 text-dark-400" />
       </div>
 
       {/* PWA Install */}

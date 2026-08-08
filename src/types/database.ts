@@ -36,6 +36,7 @@ export interface Category {
   user_id: string
   name: string
   type: CategoryType
+  budget_limit: number
   icon?: string | null
   created_at: string
 }
@@ -49,6 +50,15 @@ export interface Transaction {
   category_id: string | null
   note: string | null
   transaction_date: string
+  created_at: string
+}
+
+export interface CategoryBudget {
+  id: string
+  user_id: string
+  category_id: string
+  month: string
+  amount: number
   created_at: string
 }
 
@@ -70,6 +80,8 @@ export interface TransactionInsert {
   user_id?: string
 }
 
+export type CategoryBudgetInsert = Omit<CategoryBudget, 'id' | 'created_at' | 'user_id'>
+
 // ── Update Types (partial for editing) ──
 
 export type UserSettingUpdate = Partial<UserSettingInsert>
@@ -86,6 +98,8 @@ export interface TransactionUpdate {
   note?: string | null
   transaction_date?: string
 }
+
+export type CategoryBudgetUpdate = Partial<CategoryBudgetInsert>
 
 // ── Joined / View Types ─────────────────
 
@@ -118,6 +132,11 @@ export interface Database {
         Row: Transaction
         Insert: TransactionInsert & { user_id: string }
         Update: TransactionUpdate
+      }
+      category_budgets: {
+        Row: CategoryBudget
+        Insert: CategoryBudgetInsert & { user_id: string }
+        Update: CategoryBudgetUpdate
       }
     }
     Views: Record<string, never>

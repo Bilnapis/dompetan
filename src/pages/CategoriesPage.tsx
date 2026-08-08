@@ -1,12 +1,15 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Tag } from 'lucide-react'
 import { useCategories } from '../hooks/useCategories'
 import { CategoryForm } from '../components/CategoryForm'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Button } from '../components/ui/Button'
+import { formatCurrency } from '../lib/helpers'
 import type { Category, CategoryInsert, CategoryUpdate, CategoryType } from '../types/database'
 
 export function CategoriesPage() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<CategoryType>('expense')
   const { categories, loading, addCategory, updateCategory, deleteCategory } = useCategories(activeTab)
 
@@ -89,7 +92,12 @@ export function CategoriesPage() {
           {categories.map((cat) => (
             <div
               key={cat.id}
-              className="flex items-center gap-3 px-4 py-3 group hover:bg-dark-800/50 transition-colors"
+              onClick={() => {
+                if (cat.type === 'expense') {
+                  navigate(`/categories/${cat.id}`)
+                }
+              }}
+              className="flex items-center gap-3 px-4 py-3 group hover:bg-dark-800/50 transition-colors cursor-pointer"
             >
               <div className={`
                 w-9 h-9 rounded-xl flex items-center justify-center shrink-0
@@ -102,17 +110,24 @@ export function CategoriesPage() {
                 )}
               </div>
 
-              <span className="flex-1 min-w-0 text-sm font-medium text-dark-200 truncate">{cat.name}</span>
+              <div className="flex-1 min-w-0 flex flex-col">
+                <span className="text-sm font-medium text-dark-200 truncate">{cat.name}</span>
+                {cat.type === 'expense' && cat.budget_limit > 0 && (
+                  <span className="text-[10px] text-dark-400 mt-0.5">
+                    Limit: {formatCurrency(cat.budget_limit)}
+                  </span>
+                )}
+              </div>
 
               <div className="flex items-center gap-1 shrink-0">
                 <button
-                  onClick={() => handleEdit(cat)}
+                  onClick={(e) => { e.stopPropagation(); handleEdit(cat); }}
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-dark-400 hover:text-primary-400 hover:bg-dark-700 transition-colors"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  onClick={() => handleDelete(cat.id)}
+                  onClick={(e) => { e.stopPropagation(); handleDelete(cat.id); }}
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-dark-400 hover:text-expense hover:bg-dark-700 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />

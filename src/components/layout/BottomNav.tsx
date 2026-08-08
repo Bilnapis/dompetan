@@ -2,7 +2,7 @@ import { useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   ArrowLeftRight,
-  Tag,
+  PieChart,
   User,
   Wallet,
 } from "lucide-react";
@@ -11,7 +11,7 @@ const navItems = [
   { path: "/", icon: LayoutDashboard, label: "Dashboard" },
   { path: "/transactions", icon: ArrowLeftRight, label: "Transaksi" },
   { path: "/accounts", icon: Wallet, label: "Dompet" },
-  { path: "/categories", icon: Tag, label: "Kategori" },
+  { path: "/budget", icon: PieChart, label: "Budget" },
   { path: "/profile", icon: User, label: "Profil" },
 ];
 

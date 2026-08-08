@@ -32,6 +32,7 @@ CREATE TABLE categories (
   user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name        TEXT NOT NULL,
   type        transaction_type NOT NULL,
+  budget_limit DECIMAL(15, 2) NOT NULL DEFAULT 0,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -46,6 +47,17 @@ CREATE TABLE transactions (
   note              TEXT,
   transaction_date  DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Tabel Budget per Kategori (Per Bulan)
+CREATE TABLE category_budgets (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  category_id UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+  month       TEXT NOT NULL, -- Format: 'YYYY-MM'
+  amount      DECIMAL(15, 2) NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, category_id, month)
 );
 
 -- ── 3. Create Indexes ───────────────────
@@ -70,6 +82,7 @@ ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE category_budgets ENABLE ROW LEVEL SECURITY;
 
 -- ── 5. RLS Policies - Settings ──────────
 
@@ -148,6 +161,14 @@ CREATE POLICY "Users can delete own transactions"
   ON transactions
   FOR DELETE
   USING (auth.uid() = user_id);
+
+-- ── 9. RLS Policies - Category Budgets ──
+
+CREATE POLICY "Users can manage their own category budgets"
+  ON category_budgets
+  FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 -- ── 9. Default Categories & Account (Optional) ───
 -- Fungsi untuk membuat kategori dan dompet default saat user baru mendaftar

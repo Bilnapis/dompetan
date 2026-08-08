@@ -4,6 +4,7 @@ import { useTransactions } from "../hooks/useTransactions";
 import { TransactionItem } from "../components/TransactionItem";
 import { TransactionForm } from "../components/TransactionForm";
 import { EmptyState } from "../components/ui/EmptyState";
+import { useCategories } from "../hooks/useCategories";
 import {
   formatDateGroup,
   getCycleDateRange,
@@ -22,6 +23,7 @@ export function TransactionsPage() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
+  const [activeTab, setActiveTab] = useState<string>("Daily");
   const [showForm, setShowForm] = useState(false);
   const [editingTx, setEditingTx] = useState<TransactionWithDetails | null>(
     null,
@@ -77,6 +79,8 @@ export function TransactionsPage() {
     startDate: dateRange.start,
     endDate: dateRange.end,
   });
+
+  const { categories } = useCategories();
 
   // Group and filter transactions by date
   const groupedTransactions = useMemo(() => {
@@ -175,108 +179,129 @@ export function TransactionsPage() {
         </div>
       )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-2 mb-5">
-        <div className="glass rounded-xl p-3 text-center">
-          <p className="text-[10px] text-dark-400 mb-1">Pemasukan</p>
-          <p className="text-sm font-bold text-income">
-            {formatCurrency(summary.totalIncome)}
-          </p>
-        </div>
-        <div className="glass rounded-xl p-3 text-center">
-          <p className="text-[10px] text-dark-400 mb-1">Pengeluaran</p>
-          <p className="text-sm font-bold text-expense">
-            {formatCurrency(summary.totalExpense)}
-          </p>
-        </div>
-        <div className="glass rounded-xl p-3 text-center">
-          <p className="text-[10px] text-dark-400 mb-1">Selisih</p>
-          <p
-            className={`text-sm font-bold ${summary.balance >= 0 ? "text-primary-400" : "text-expense"}`}
-          >
-            {formatCurrency(summary.balance)}
-          </p>
-        </div>
-      </div>
-
-      {/* Type Filter Tabs */}
-      <div className="flex rounded-xl overflow-hidden border border-dark-700 mb-5">
-        {filters.map((f) => (
+      {/* Top Navigation Tabs */}
+      <div className="flex justify-between items-center border-b border-dark-700/50 mb-6 overflow-x-auto no-scrollbar">
+        {["Daily", "Calendar", "Monthly", "Note"].map((tab) => (
           <button
-            key={f.value}
-            onClick={() => setFilterType(f.value)}
+            key={tab}
+            onClick={() => setActiveTab(tab)}
             className={`
-              flex-1 py-2 text-xs font-medium transition-all duration-200
-              ${
-                filterType === f.value
-                  ? "bg-primary-500/15 text-primary-400 border-b-2 border-primary-400"
-                  : "bg-dark-800/50 text-dark-400 hover:text-dark-200"
-              }
+              pb-3 px-2 text-sm font-medium whitespace-nowrap transition-colors relative
+              ${activeTab === tab ? "text-dark-100" : "text-dark-500 hover:text-dark-300"}
             `}
           >
-            {f.label}
+            {tab}
+            {activeTab === tab && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-400 rounded-t-full" />
+            )}
           </button>
         ))}
       </div>
 
-      {/* Transactions List */}
-      {loading ? (
-        <div className="py-12 flex justify-center">
-          <div className="w-6 h-6 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : groupedTransactions.length === 0 ? (
-        <EmptyState
-          title="Belum ada transaksi"
-          description="Transaksi yang kamu buat akan muncul di sini"
-          actionLabel="Tambah Transaksi"
-          onAction={() => {
-            setEditingTx(null);
-            setShowForm(true);
-          }}
-        />
-      ) : (
-        <div className="space-y-4 mb-6">
-          {groupedTransactions.map(([date, txs]) => {
-            const dailyIncome = txs
-              .filter((t) => t.type === "income" && t.category_id !== null)
-              .reduce((sum, t) => sum + Number(t.amount), 0);
-            const dailyExpense = txs
-              .filter((t) => t.type === "expense" && t.category_id !== null)
-              .reduce((sum, t) => sum + Number(t.amount), 0);
+      <>
+        {/* Summary Cards */}
+          <div className="grid grid-cols-3 gap-2 mb-5">
+            <div className="glass rounded-xl p-3 text-center">
+              <p className="text-[10px] text-dark-400 mb-1">Pemasukan</p>
+              <p className="text-sm font-bold text-income">
+                {formatCurrency(summary.totalIncome)}
+              </p>
+            </div>
+            <div className="glass rounded-xl p-3 text-center">
+              <p className="text-[10px] text-dark-400 mb-1">Pengeluaran</p>
+              <p className="text-sm font-bold text-expense">
+                {formatCurrency(summary.totalExpense)}
+              </p>
+            </div>
+            <div className="glass rounded-xl p-3 text-center">
+              <p className="text-[10px] text-dark-400 mb-1">Selisih</p>
+              <p
+                className={`text-sm font-bold ${summary.balance >= 0 ? "text-primary-400" : "text-expense"}`}
+              >
+                {formatCurrency(summary.balance)}
+              </p>
+            </div>
+          </div>
 
-            return (
-              <div key={date}>
-                <div className="flex items-center justify-between mb-2 px-1">
-                  <p className="text-xs font-medium text-dark-500">
-                    {formatDateGroup(date)}
-                  </p>
-                  <div className="flex gap-3 text-[10px] font-semibold">
-                    {dailyIncome > 0 && (
-                      <span className="text-income">
-                        +{formatCurrency(dailyIncome)}
-                      </span>
-                    )}
-                    {dailyExpense > 0 && (
-                      <span className="text-expense">
-                        -{formatCurrency(dailyExpense)}
-                      </span>
-                    )}
+          {/* Type Filter Tabs */}
+          <div className="flex rounded-xl overflow-hidden border border-dark-700 mb-5">
+            {filters.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setFilterType(f.value)}
+                className={`
+                  flex-1 py-2 text-xs font-medium transition-all duration-200
+                  ${
+                    filterType === f.value
+                      ? "bg-primary-500/15 text-primary-400 border-b-2 border-primary-400"
+                      : "bg-dark-800/50 text-dark-400 hover:text-dark-200"
+                  }
+                `}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Transactions List */}
+          {loading ? (
+            <div className="py-12 flex justify-center">
+              <div className="w-6 h-6 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : groupedTransactions.length === 0 ? (
+            <EmptyState
+              title="Belum ada transaksi"
+              description="Transaksi yang kamu buat akan muncul di sini"
+              actionLabel="Tambah Transaksi"
+              onAction={() => {
+                setEditingTx(null);
+                setShowForm(true);
+              }}
+            />
+          ) : (
+            <div className="space-y-4 mb-6">
+              {groupedTransactions.map(([date, txs]) => {
+                const dailyIncome = txs
+                  .filter((t) => t.type === "income" && t.category_id !== null)
+                  .reduce((sum, t) => sum + Number(t.amount), 0);
+                const dailyExpense = txs
+                  .filter((t) => t.type === "expense" && t.category_id !== null)
+                  .reduce((sum, t) => sum + Number(t.amount), 0);
+
+                return (
+                  <div key={date}>
+                    <div className="flex items-center justify-between mb-2 px-1">
+                      <p className="text-xs font-medium text-dark-500">
+                        {formatDateGroup(date)}
+                      </p>
+                      <div className="flex gap-3 text-[10px] font-semibold">
+                        {dailyIncome > 0 && (
+                          <span className="text-income">
+                            +{formatCurrency(dailyIncome)}
+                          </span>
+                        )}
+                        {dailyExpense > 0 && (
+                          <span className="text-expense">
+                            -{formatCurrency(dailyExpense)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="glass rounded-2xl overflow-hidden divide-y divide-dark-700/50">
+                      {txs.map((tx) => (
+                        <TransactionItem
+                          key={tx.id}
+                          transaction={tx}
+                          onEdit={handleEdit}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div className="glass rounded-2xl overflow-hidden divide-y divide-dark-700/50">
-                  {txs.map((tx) => (
-                    <TransactionItem
-                      key={tx.id}
-                      transaction={tx}
-                      onEdit={handleEdit}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                );
+              })}
+            </div>
+          )}
+      </>
 
       {/* FAB */}
       <button

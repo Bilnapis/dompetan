@@ -20,7 +20,6 @@ export function CategoryForm({ isOpen, onClose, onSubmit, editData, defaultType 
   const [showPicker, setShowPicker] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-
   useEffect(() => {
     if (editData) {
       setName(editData.name)
@@ -53,7 +52,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, editData, defaultType 
 
     const data = editData
       ? { name: name.trim(), icon }
-      : { name: name.trim(), type, icon }
+      : { name: name.trim(), type, icon, budget_limit: 0 }
 
     const result = await onSubmit(data)
 
@@ -123,6 +122,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, editData, defaultType 
             </div>
           </div>
         )}
+
 
         {/* Emoji Picker Library */}
         <div>
