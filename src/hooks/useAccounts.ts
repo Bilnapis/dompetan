@@ -13,7 +13,7 @@ export function useAccounts() {
 
     setLoading(true)
     const { data, error } = await supabase
-      .from('accounts')
+      .from('accounts_with_balance')
       .select('*')
       .order('name')
 
@@ -30,9 +30,35 @@ export function useAccounts() {
   const addAccount = async (data: AccountInsert) => {
     if (!user) return { error: 'Not authenticated' }
 
-    const { error } = await supabase
+    const { data: newData, error } = await supabase
       .from('accounts')
       .insert({ ...data, user_id: user.id } as never)
+      .select()
+      .single()
+
+    if (error) return { error: error.message }
+
+    await fetchAccounts()
+    return { data: newData, error: null }
+  }
+
+  const adjustBalance = async (accountId: string, difference: number) => {
+    if (!user) return { error: 'Not authenticated' }
+    if (difference === 0) return { error: null }
+
+    const type = difference > 0 ? 'income' : 'expense'
+    const amount = Math.abs(difference)
+
+    const { error } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: user.id,
+        account_id: accountId,
+        type,
+        amount,
+        note: 'Penyesuaian Saldo',
+        transaction_date: new Date().toISOString(),
+      } as never)
 
     if (error) return { error: error.message }
 
@@ -81,6 +107,7 @@ export function useAccounts() {
     addAccount,
     updateAccount,
     deleteAccount,
+    adjustBalance,
     refreshAccounts: fetchAccounts,
   }
 }

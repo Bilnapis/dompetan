@@ -4,12 +4,14 @@ import { useTransactions } from '../hooks/useTransactions'
 import { TransactionItem } from '../components/TransactionItem'
 import { TransactionForm } from '../components/TransactionForm'
 import { EmptyState } from '../components/ui/EmptyState'
-import { formatDateGroup } from '../lib/helpers'
+import { formatDateGroup, getCycleDateRange, formatDateShort, formatCurrency } from '../lib/helpers'
+import { useSettings } from '../contexts/SettingsContext'
 import type { TransactionWithDetails, TransactionInsert, CategoryType } from '../types/database'
 
 type FilterType = 'all' | CategoryType
 
 export function TransactionsPage() {
+  const { settings } = useSettings()
   const [filterType, setFilterType] = useState<FilterType>('all')
   const [filterMonth, setFilterMonth] = useState(() => {
     const now = new Date()
@@ -18,21 +20,23 @@ export function TransactionsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingTx, setEditingTx] = useState<TransactionWithDetails | null>(null)
 
-  // Calculate date range from month filter
+  // Calculate date range from month filter and user settings
   const dateRange = useMemo(() => {
     const [year, month] = filterMonth.split('-').map(Number)
-    const start = new Date(year, month - 1, 1)
-    const end = new Date(year, month, 0)
-    return {
-      start: start.toISOString().split('T')[0],
-      end: end.toISOString().split('T')[0],
-    }
-  }, [filterMonth])
+    return getCycleDateRange(
+      year,
+      month - 1, // 0-indexed month
+      settings?.month_start_date || 1,
+      settings?.weekend_behavior || 'none'
+    )
+  }, [filterMonth, settings])
 
   const {
     transactions,
     loading,
+    summary,
     addTransaction,
+    addTransfer,
     updateTransaction,
     deleteTransaction,
   } = useTransactions({
@@ -52,7 +56,17 @@ export function TransactionsPage() {
     return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a))
   }, [transactions])
 
-  const handleSubmit = async (data: TransactionInsert) => {
+  const handleSubmit = async (data: any) => {
+    if (data.type === 'transfer') {
+      return await addTransfer(
+        data.from_account_id,
+        data.to_account_id,
+        data.amount,
+        data.transaction_date,
+        data.note
+      )
+    }
+
     if (editingTx) {
       return await updateTransaction(editingTx.id, data)
     }
@@ -95,6 +109,31 @@ export function TransactionsPage() {
           />
         </div>
       </div>
+      
+      {/* Indicator of actual date range */}
+      {(settings?.month_start_date ?? 1) > 1 && (
+        <div className="text-[10px] text-dark-400 text-right -mt-4 mb-4 pr-1">
+          Rentang: {formatDateShort(dateRange.start)} - {formatDateShort(dateRange.end)}
+        </div>
+      )}
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-3 gap-2 mb-5">
+        <div className="glass rounded-xl p-3 text-center">
+          <p className="text-[10px] text-dark-400 mb-1">Pemasukan</p>
+          <p className="text-sm font-bold text-income">{formatCurrency(summary.totalIncome)}</p>
+        </div>
+        <div className="glass rounded-xl p-3 text-center">
+          <p className="text-[10px] text-dark-400 mb-1">Pengeluaran</p>
+          <p className="text-sm font-bold text-expense">{formatCurrency(summary.totalExpense)}</p>
+        </div>
+        <div className="glass rounded-xl p-3 text-center">
+          <p className="text-[10px] text-dark-400 mb-1">Selisih</p>
+          <p className={`text-sm font-bold ${summary.balance >= 0 ? 'text-primary-400' : 'text-expense'}`}>
+            {formatCurrency(summary.balance)}
+          </p>
+        </div>
+      </div>
 
       {/* Type Filter Tabs */}
       <div className="flex rounded-xl overflow-hidden border border-dark-700 mb-5">
@@ -129,12 +168,26 @@ export function TransactionsPage() {
         />
       ) : (
         <div className="space-y-4 mb-6">
-          {groupedTransactions.map(([date, txs]) => (
-            <div key={date}>
-              <p className="text-xs font-medium text-dark-500 mb-2 px-1">
-                {formatDateGroup(date)}
-              </p>
-              <div className="glass rounded-2xl overflow-hidden divide-y divide-dark-700/50">
+          {groupedTransactions.map(([date, txs]) => {
+            const dailyIncome = txs
+              .filter(t => t.type === 'income' && t.category_id !== null)
+              .reduce((sum, t) => sum + Number(t.amount), 0)
+            const dailyExpense = txs
+              .filter(t => t.type === 'expense' && t.category_id !== null)
+              .reduce((sum, t) => sum + Number(t.amount), 0)
+              
+            return (
+              <div key={date}>
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <p className="text-xs font-medium text-dark-500">
+                    {formatDateGroup(date)}
+                  </p>
+                  <div className="flex gap-3 text-[10px] font-semibold">
+                    {dailyIncome > 0 && <span className="text-income">+{formatCurrency(dailyIncome)}</span>}
+                    {dailyExpense > 0 && <span className="text-expense">-{formatCurrency(dailyExpense)}</span>}
+                  </div>
+                </div>
+                <div className="glass rounded-2xl overflow-hidden divide-y divide-dark-700/50">
                 {txs.map((tx) => (
                   <TransactionItem
                     key={tx.id}
@@ -143,9 +196,10 @@ export function TransactionsPage() {
                     onDelete={handleDelete}
                   />
                 ))}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

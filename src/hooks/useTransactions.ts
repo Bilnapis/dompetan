@@ -71,6 +71,43 @@ export function useTransactions(options?: UseTransactionsOptions) {
     return { error: null }
   }
 
+  const addTransfer = async (
+    fromAccountId: string,
+    toAccountId: string,
+    amount: number,
+    transaction_date: string,
+    note?: string
+  ) => {
+    if (!user) return { error: 'Not authenticated' }
+
+    const expenseTx = {
+      user_id: user.id,
+      account_id: fromAccountId,
+      type: 'expense',
+      amount,
+      transaction_date,
+      note: note ? `Transfer Keluar: ${note}` : 'Transfer Keluar'
+    }
+
+    const incomeTx = {
+      user_id: user.id,
+      account_id: toAccountId,
+      type: 'income',
+      amount,
+      transaction_date,
+      note: note ? `Transfer Masuk: ${note}` : 'Transfer Masuk'
+    }
+
+    const { error } = await supabase
+      .from('transactions')
+      .insert([expenseTx, incomeTx] as never)
+
+    if (error) return { error: error.message }
+
+    await fetchTransactions()
+    return { error: null }
+  }
+
   const updateTransaction = async (id: string, data: TransactionUpdate) => {
     if (!user) return { error: 'Not authenticated' }
 
@@ -104,10 +141,10 @@ export function useTransactions(options?: UseTransactionsOptions) {
   // Calculate summary
   const summary = {
     totalIncome: transactions
-      .filter((t) => t.type === 'income')
+      .filter((t) => t.type === 'income' && t.category_id !== null)
       .reduce((sum, t) => sum + Number(t.amount), 0),
     totalExpense: transactions
-      .filter((t) => t.type === 'expense')
+      .filter((t) => t.type === 'expense' && t.category_id !== null)
       .reduce((sum, t) => sum + Number(t.amount), 0),
     get balance() {
       return this.totalIncome - this.totalExpense
@@ -121,6 +158,7 @@ export function useTransactions(options?: UseTransactionsOptions) {
     error,
     summary,
     addTransaction,
+    addTransfer,
     updateTransaction,
     deleteTransaction,
     refetch: fetchTransactions,

@@ -1,11 +1,52 @@
-import { LogOut, Mail, Shield, Download, CheckCircle2 } from 'lucide-react'
+import { LogOut, Mail, Shield, Download, CheckCircle2, Settings as SettingsIcon } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useSettings } from '../contexts/SettingsContext'
 import { usePWAInstall } from '../hooks'
 import { Button } from '../components/ui/Button'
+import { Input, Select } from '../components/ui/Input'
+import type { WeekendBehavior } from '../types/database'
 
 export function ProfilePage() {
   const { user, signOut } = useAuth()
+  const { settings, updateSettings, loading: settingsLoading } = useSettings()
   const { isInstallable, isInstalled, promptInstall } = usePWAInstall()
+
+  const [startDate, setStartDate] = useState('1')
+  const [weekendBehavior, setWeekendBehavior] = useState<WeekendBehavior>('none')
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    if (settings) {
+      setStartDate(settings.month_start_date.toString())
+      setWeekendBehavior(settings.weekend_behavior)
+    }
+  }, [settings])
+
+  const handleSaveSettings = async () => {
+    setSaving(true)
+    setMessage('')
+    
+    let parsedDate = parseInt(startDate)
+    if (isNaN(parsedDate) || parsedDate < 1 || parsedDate > 31) {
+      parsedDate = 1
+      setStartDate('1')
+    }
+
+    const { error } = await updateSettings({
+      month_start_date: parsedDate,
+      weekend_behavior: weekendBehavior,
+    })
+
+    if (error) {
+      setMessage('Gagal menyimpan pengaturan')
+    } else {
+      setMessage('Pengaturan berhasil disimpan')
+      setTimeout(() => setMessage(''), 3000)
+    }
+    setSaving(false)
+  }
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-6">
@@ -33,6 +74,61 @@ export function ProfilePage() {
             <span className="text-sm text-dark-300">Data dilindungi Row Level Security</span>
           </div>
         </div>
+      </div>
+
+      {/* Settings Card */}
+      <div className="glass rounded-2xl p-5 mb-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-primary-500/15 flex items-center justify-center">
+            <SettingsIcon className="w-5 h-5 text-primary-400" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-dark-100">Pengaturan Siklus Bulan</p>
+            <p className="text-xs text-dark-400">Atur tanggal awal bulan untuk pencatatan</p>
+          </div>
+        </div>
+
+        {settingsLoading ? (
+          <div className="text-sm text-dark-400 py-2">Memuat pengaturan...</div>
+        ) : (
+          <div className="space-y-4">
+            <Input
+              type="number"
+              min="1"
+              max="31"
+              label="Tanggal Awal Siklus"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              placeholder="Contoh: 25"
+            />
+
+            <Select
+              label="Jika Jatuh Pada Akhir Pekan (Sabtu/Minggu)"
+              value={weekendBehavior}
+              onChange={(e) => setWeekendBehavior(e.target.value as WeekendBehavior)}
+              options={[
+                { value: 'none', label: 'Tetap pada tanggal tersebut' },
+                { value: 'previous_friday', label: 'Maju ke Jumat sebelumnya' },
+                { value: 'next_monday', label: 'Mundur ke Senin berikutnya' },
+              ]}
+            />
+
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={handleSaveSettings}
+              disabled={saving}
+            >
+              {saving ? 'Menyimpan...' : 'Simpan Pengaturan'}
+            </Button>
+            
+            {message && (
+              <p className={`text-sm text-center ${message.includes('Gagal') ? 'text-expense' : 'text-income'}`}>
+                {message}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* PWA Install */}

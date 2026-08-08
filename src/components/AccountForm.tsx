@@ -7,26 +7,30 @@ import type { Account, AccountInsert, AccountUpdate } from '../types/database'
 interface AccountFormProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: AccountInsert | AccountUpdate) => Promise<{ error: string | null }>
+  onSubmit: (data: AccountInsert | AccountUpdate, balance: number) => Promise<{ error: string | null }>
   editData?: Account | null
 }
 
 export function AccountForm({ isOpen, onClose, onSubmit, editData }: AccountFormProps) {
   const [name, setName] = useState('')
+  const [balance, setBalance] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     if (editData) {
       setName(editData.name)
+      setBalance(editData.balance?.toString() || '0')
     } else {
       setName('')
+      setBalance('')
       setError('')
     }
   }, [editData, isOpen])
 
   const handleClose = () => {
     setName('')
+    setBalance('')
     setError('')
     onClose()
   }
@@ -43,7 +47,8 @@ export function AccountForm({ isOpen, onClose, onSubmit, editData }: AccountForm
     setLoading(true)
 
     const data = { name: name.trim() }
-    const result = await onSubmit(data)
+    const numBalance = parseInt(balance) || 0
+    const result = await onSubmit(data, numBalance)
 
     if (result.error) {
       setError(result.error)
@@ -75,6 +80,15 @@ export function AccountForm({ isOpen, onClose, onSubmit, editData }: AccountForm
           onChange={(e) => setName(e.target.value)}
           required
           autoFocus
+        />
+
+        <Input
+          type="number"
+          label={editData ? "Sesuaikan Saldo Sekarang" : "Saldo Awal"}
+          placeholder="0"
+          value={balance}
+          onChange={(e) => setBalance(e.target.value)}
+          required
         />
 
         <div className="flex gap-3 pt-2">

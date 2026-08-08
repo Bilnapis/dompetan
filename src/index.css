@@ -5,18 +5,18 @@
    ======================================== */
 
 @theme {
-  /* Primary Colors - Emerald */
-  --color-primary-50: #ecfdf5;
-  --color-primary-100: #d1fae5;
-  --color-primary-200: #a7f3d0;
-  --color-primary-300: #6ee7b7;
-  --color-primary-400: #34d399;
-  --color-primary-500: #10b981;
-  --color-primary-600: #059669;
-  --color-primary-700: #047857;
-  --color-primary-800: #065f46;
-  --color-primary-900: #064e3b;
-  --color-primary-950: #022c22;
+  /* Primary Colors - Blue */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
 
   /* Dark Theme Colors */
   --color-dark-50: #f8fafc;
@@ -31,10 +31,10 @@
   --color-dark-900: #0f172a;
   --color-dark-950: #020617;
 
-  /* Accent - Income (Blue) */
-  --color-income: #3b82f6;
-  --color-income-light: #93c5fd;
-  --color-income-dark: #1d4ed8;
+  /* Accent - Income (Green) */
+  --color-income: #10b981;
+  --color-income-light: #6ee7b7;
+  --color-income-dark: #047857;
 
   /* Accent - Expense (Rose) */
   --color-expense: #f43f5e;
@@ -103,7 +103,7 @@
 }
 
 @utility glow-primary {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3), 0 0 60px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), 0 0 60px rgba(59, 130, 246, 0.1);
 }
 
 /* ========================================

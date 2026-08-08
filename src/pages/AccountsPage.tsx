@@ -4,18 +4,34 @@ import { useAccounts } from '../hooks/useAccounts'
 import { AccountForm } from '../components/AccountForm'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Button } from '../components/ui/Button'
+import { formatCurrency } from '../lib/helpers'
 import type { Account, AccountInsert, AccountUpdate } from '../types/database'
 
 export function AccountsPage() {
-  const { accounts, loading, addAccount, updateAccount, deleteAccount } = useAccounts()
+  const { accounts, loading, addAccount, updateAccount, deleteAccount, adjustBalance } = useAccounts()
   const [showForm, setShowForm] = useState(false)
   const [editingAcc, setEditingAcc] = useState<Account | null>(null)
 
-  const handleSubmit = async (data: AccountInsert | AccountUpdate) => {
+  const handleSubmit = async (data: AccountInsert | AccountUpdate, desiredBalance: number) => {
     if (editingAcc) {
-      return await updateAccount(editingAcc.id, data as AccountUpdate)
+      const result = await updateAccount(editingAcc.id, data as AccountUpdate)
+      if (result.error) return result
+      
+      const diff = desiredBalance - (editingAcc.balance || 0)
+      if (diff !== 0) {
+        return await adjustBalance(editingAcc.id, diff)
+      }
+      return result
     }
-    return await addAccount(data as AccountInsert)
+    
+    const result = await addAccount(data as AccountInsert)
+    if (result.error) return result
+    
+    // Add initial balance transaction if non-zero
+    if (desiredBalance !== 0 && result.data) {
+      return await adjustBalance(result.data.id, desiredBalance)
+    }
+    return result
   }
 
   const handleEdit = (acc: Account) => {
@@ -74,7 +90,12 @@ export function AccountsPage() {
                 <Wallet className="w-4 h-4 text-primary-400" />
               </div>
 
-              <span className="flex-1 text-sm font-medium text-dark-200">{acc.name}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-dark-200 truncate">{acc.name}</p>
+                <p className={`text-xs mt-0.5 font-semibold ${acc.balance && acc.balance < 0 ? 'text-expense' : 'text-primary-400'}`}>
+                  {formatCurrency(acc.balance || 0)}
+                </p>
+              </div>
 
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
                 <button

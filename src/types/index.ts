@@ -2,6 +2,10 @@
 // Barrel export file
 
 export type {
+  UserSetting,
+  UserSettingInsert,
+  UserSettingUpdate,
+  WeekendBehavior,
   Account,
   AccountInsert,
   AccountUpdate,

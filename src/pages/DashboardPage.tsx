@@ -6,19 +6,26 @@ import { useTransactions } from '../hooks/useTransactions'
 import { TransactionItem } from '../components/TransactionItem'
 import { TransactionForm } from '../components/TransactionForm'
 import { EmptyState } from '../components/ui/EmptyState'
-import { formatCurrency, getGreeting, getCurrentMonthRange } from '../lib/helpers'
+import { formatCurrency, getGreeting, getCurrentCycleRange } from '../lib/helpers'
+import { useSettings } from '../contexts/SettingsContext'
 import type { TransactionWithDetails, TransactionInsert } from '../types/database'
 
 export function DashboardPage() {
   const { user, signOut } = useAuth()
+  const { settings } = useSettings()
   const navigate = useNavigate()
-  const monthRange = getCurrentMonthRange()
+  
+  const monthRange = getCurrentCycleRange(
+    settings?.month_start_date || 1, 
+    settings?.weekend_behavior || 'none'
+  )
 
   const {
     transactions,
     loading,
     summary,
     addTransaction,
+    addTransfer,
     updateTransaction,
     deleteTransaction,
   } = useTransactions({
@@ -29,20 +36,26 @@ export function DashboardPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingTx, setEditingTx] = useState<TransactionWithDetails | null>(null)
 
-  const handleAdd = async (data: TransactionInsert) => {
-    return await addTransaction(data)
-  }
-
   const handleEdit = (tx: TransactionWithDetails) => {
     setEditingTx(tx)
     setShowForm(true)
   }
 
-  const handleSubmit = async (data: TransactionInsert) => {
+  const handleSubmit = async (data: any) => {
+    if (data.type === 'transfer') {
+      return await addTransfer(
+        data.from_account_id,
+        data.to_account_id,
+        data.amount,
+        data.transaction_date,
+        data.note
+      )
+    }
+
     if (editingTx) {
       return await updateTransaction(editingTx.id, data)
     }
-    return await handleAdd(data)
+    return await addTransaction(data)
   }
 
   const handleDelete = async (id: string) => {

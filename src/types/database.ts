@@ -5,8 +5,17 @@
 // ── Enum Types ──────────────────────────
 
 export type CategoryType = 'income' | 'expense'
+export type WeekendBehavior = 'none' | 'previous_friday' | 'next_monday'
 
 // ── Row Types (data from database) ─────
+
+export interface UserSetting {
+  user_id: string
+  month_start_date: number
+  weekend_behavior: WeekendBehavior
+  created_at: string
+  updated_at: string
+}
 
 export interface User {
   id: string
@@ -19,6 +28,7 @@ export interface Account {
   user_id: string
   name: string
   created_at: string
+  balance?: number
 }
 
 export interface Category {
@@ -43,6 +53,8 @@ export interface Transaction {
 
 // ── Insert Types (for creating new records) ─
 
+export type UserSettingInsert = Omit<UserSetting, 'created_at' | 'updated_at'>
+
 export type AccountInsert = Omit<Account, 'id' | 'created_at' | 'user_id'>
 
 export type CategoryInsert = Omit<Category, 'id' | 'created_at' | 'user_id'>
@@ -58,6 +70,8 @@ export interface TransactionInsert {
 }
 
 // ── Update Types (partial for editing) ──
+
+export type UserSettingUpdate = Partial<UserSettingInsert>
 
 export type AccountUpdate = Partial<AccountInsert>
 
@@ -84,6 +98,11 @@ export interface TransactionWithDetails extends Transaction {
 export interface Database {
   public: {
     Tables: {
+      user_settings: {
+        Row: UserSetting
+        Insert: UserSettingInsert
+        Update: UserSettingUpdate
+      }
       accounts: {
         Row: Account
         Insert: AccountInsert & { user_id: string }

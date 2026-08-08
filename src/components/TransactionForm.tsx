@@ -21,10 +21,11 @@ export function TransactionForm({
   onSubmit,
   editData,
 }: TransactionFormProps) {
-  const [type, setType] = useState<CategoryType>("expense");
+  const [type, setType] = useState<CategoryType | "transfer">("expense");
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [accountId, setAccountId] = useState("");
+  const [toAccountId, setToAccountId] = useState("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(toDateInputValue());
   const [loading, setLoading] = useState(false);
@@ -53,6 +54,7 @@ export function TransactionForm({
     setAmount("");
     setCategoryId("");
     setAccountId("");
+    setToAccountId("");
     setNote("");
     setDate(toDateInputValue());
     setError("");
@@ -73,16 +75,39 @@ export function TransactionForm({
       return;
     }
 
+    if (type === "transfer") {
+      if (accountId === toAccountId) {
+        setError("Pos keuangan asal dan tujuan tidak boleh sama");
+        return;
+      }
+      if (!accountId || !toAccountId) {
+        setError("Pilih pos keuangan asal dan tujuan");
+        return;
+      }
+    }
+
     setLoading(true);
 
-    const data = {
-      amount: numAmount,
-      type,
-      category_id: categoryId || null,
-      account_id: accountId || null,
-      note: note.trim() || null,
-      transaction_date: date,
-    };
+    let data: any;
+    if (type === "transfer") {
+      data = {
+        type: "transfer",
+        amount: numAmount,
+        from_account_id: accountId,
+        to_account_id: toAccountId,
+        note: note.trim() || null,
+        transaction_date: date,
+      };
+    } else {
+      data = {
+        amount: numAmount,
+        type,
+        category_id: categoryId || null,
+        account_id: accountId || null,
+        note: note.trim() || null,
+        transaction_date: date,
+      };
+    }
 
     const result = await onSubmit(data);
 
@@ -148,6 +173,23 @@ export function TransactionForm({
             >
               Pengeluaran
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setType("transfer");
+                setCategoryId("");
+              }}
+              className={`
+                flex-1 py-2.5 text-sm font-medium transition-all duration-200 border-l border-dark-700
+                ${
+                  type === "transfer"
+                    ? "bg-primary-500 text-white"
+                    : "bg-dark-800 text-dark-400 hover:text-dark-200"
+                }
+              `}
+            >
+              Transfer
+            </button>
           </div>
         </div>
 
@@ -164,20 +206,22 @@ export function TransactionForm({
         />
 
         {/* Category */}
-        <Select
-          label="Kategori"
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          placeholder="Pilih kategori"
-          options={categories.map((cat) => ({
-            value: cat.id,
-            label: cat.name,
-          }))}
-        />
+        {type !== "transfer" && (
+          <Select
+            label="Kategori"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            placeholder="Pilih kategori"
+            options={categories.map((cat) => ({
+              value: cat.id,
+              label: cat.name,
+            }))}
+          />
+        )}
 
         {/* Account / Dompet */}
         <Select
-          label="Pos Keuangan / Dompet"
+          label={type === "transfer" ? "Dari Pos Keuangan" : "Pos Keuangan / Dompet"}
           value={accountId}
           onChange={(e) => setAccountId(e.target.value)}
           placeholder="Pilih dompet"
@@ -187,6 +231,21 @@ export function TransactionForm({
             label: acc.name,
           }))}
         />
+
+        {/* To Account (Only for Transfer) */}
+        {type === "transfer" && (
+          <Select
+            label="Ke Pos Keuangan"
+            value={toAccountId}
+            onChange={(e) => setToAccountId(e.target.value)}
+            placeholder="Pilih dompet tujuan"
+            required
+            options={accounts.map((acc) => ({
+              value: acc.id,
+              label: acc.name,
+            }))}
+          />
+        )}
 
         {/* Date */}
         <Input
