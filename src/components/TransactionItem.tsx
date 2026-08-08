@@ -39,21 +39,25 @@ export function TransactionItem({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-dark-100 truncate flex items-center gap-2">
-          {transaction.note}
+        <p className="text-sm font-medium text-dark-100 truncate">
+          {transaction.note || transaction.category?.name || (isTransfer ? "Transfer" : "Tanpa Kategori")}
+        </p>
+        <div className="flex items-center gap-1.5 text-[11px] text-dark-400 mt-0.5 truncate">
           {transaction.account && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-dark-700 text-dark-300 whitespace-nowrap font-normal">
+            <span className="inline-flex items-center gap-1">
               <Wallet className="w-3 h-3" />
               {transaction.account.name}
             </span>
           )}
-        </p>
-        {transaction.note && (
-          <p className="text-xs text-dark-500 truncate">
-            {" "}
-            {transaction.category?.name || "Tanpa Kategori"}
-          </p>
-        )}
+          {transaction.note && (
+            <>
+              {transaction.account && <span className="text-dark-600 text-[8px]">●</span>}
+              <span className="truncate">
+                {transaction.category?.name || (isTransfer ? "Transfer" : "Tanpa Kategori")}
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Amount & Date */}

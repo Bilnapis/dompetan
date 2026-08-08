@@ -12,6 +12,8 @@ export function AccountsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingAcc, setEditingAcc] = useState<Account | null>(null)
 
+  const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0)
+
   const handleSubmit = async (data: AccountInsert | AccountUpdate, desiredBalance: number) => {
     if (editingAcc) {
       const result = await updateAccount(editingAcc.id, data as AccountUpdate)
@@ -65,6 +67,18 @@ export function AccountsPage() {
       <p className="text-sm text-dark-400 mb-5">
         Kelola dompet, rekening bank, atau e-wallet yang Anda gunakan.
       </p>
+
+      {/* Total Balance Card */}
+      {!loading && accounts.length > 0 && (
+        <div className="glass rounded-2xl p-4 mb-5 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-dark-400 mb-0.5">Total Saldo Keseluruhan</p>
+            <p className={`text-xl font-bold ${totalBalance >= 0 ? 'text-primary-400' : 'text-expense'}`}>
+              {formatCurrency(totalBalance)}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Accounts List */}
       {loading ? (

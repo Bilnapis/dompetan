@@ -151,7 +151,7 @@ export function TransactionsPage() {
               }
             }}
             className="
-              w-28 bg-dark-800 border border-dark-700 rounded-lg
+              w-32 bg-dark-800 border border-dark-700 rounded-lg
               px-2 py-1.5 text-xs text-dark-200 text-center
               focus:outline-none focus:ring-1 focus:ring-primary-500
               [&::-webkit-calendar-picker-indicator]:hidden
