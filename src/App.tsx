@@ -12,6 +12,7 @@ import { BudgetPage } from './pages/BudgetPage'
 import { CategoriesPage } from './pages/CategoriesPage'
 import { CategoryBudgetPage } from './pages/CategoryBudgetPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { TransactionFormPage } from './pages/TransactionFormPage'
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
             >
               <Route path="/" element={<DashboardPage />} />
               <Route path="/transactions" element={<TransactionsPage />} />
+              <Route path="/transaction/form" element={<TransactionFormPage />} />
               <Route path="/accounts" element={<AccountsPage />} />
               <Route path="/budget" element={<BudgetPage />} />
               <Route path="/categories" element={<CategoriesPage />} />

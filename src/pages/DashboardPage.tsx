@@ -1,10 +1,8 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Wallet, TrendingUp, TrendingDown, Plus, LogOut, ArrowRight } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTransactions } from '../hooks/useTransactions'
 import { TransactionItem } from '../components/TransactionItem'
-import { TransactionForm } from '../components/TransactionForm'
 import { EmptyState } from '../components/ui/EmptyState'
 import { formatCurrency, getGreeting, getCurrentCycleRange, formatDateShort } from '../lib/helpers'
 import { useSettings } from '../contexts/SettingsContext'
@@ -24,45 +22,16 @@ export function DashboardPage() {
     transactions,
     loading,
     summary,
-    addTransaction,
-    addTransfer,
-    updateTransaction,
-    deleteTransaction,
   } = useTransactions({
     startDate: monthRange.start,
     endDate: monthRange.end,
   })
 
-  const [showForm, setShowForm] = useState(false)
-  const [editingTx, setEditingTx] = useState<TransactionWithDetails | null>(null)
-
   const handleEdit = (tx: TransactionWithDetails) => {
-    setEditingTx(tx)
-    setShowForm(true)
+    navigate('/transaction/form', { state: { editData: tx } })
   }
 
-  const handleSubmit = async (data: any) => {
-    if (data.type === 'transfer') {
-      return await addTransfer(
-        data.from_account_id,
-        data.to_account_id,
-        data.amount,
-        data.transaction_date,
-        data.note
-      )
-    }
 
-    if (editingTx) {
-      return await updateTransaction(editingTx.id, data)
-    }
-    return await addTransaction(data)
-  }
-
-  const handleDelete = async (id: string) => {
-    if (confirm('Hapus transaksi ini?')) {
-      await deleteTransaction(id)
-    }
-  }
 
   const recentTransactions = transactions.slice(0, 5)
 
@@ -156,7 +125,7 @@ export function DashboardPage() {
               title="Belum ada transaksi"
               description="Mulai catat pemasukan dan pengeluaranmu"
               actionLabel="Tambah Transaksi"
-              onAction={() => setShowForm(true)}
+              onAction={() => navigate('/transaction/form')}
             />
           ) : (
             <div className="divide-y divide-dark-700/50">
@@ -174,7 +143,7 @@ export function DashboardPage() {
 
       {/* FAB - Add Transaction */}
       <button
-        onClick={() => { setEditingTx(null); setShowForm(true) }}
+        onClick={() => navigate('/transaction/form')}
         className="
           fixed bottom-24 right-6 z-30
           w-14 h-14 rounded-2xl
@@ -189,14 +158,6 @@ export function DashboardPage() {
         <Plus className="w-6 h-6" />
       </button>
 
-      {/* Transaction Form Modal */}
-      <TransactionForm
-        isOpen={showForm}
-        onClose={() => { setShowForm(false); setEditingTx(null) }}
-        onSubmit={handleSubmit}
-        editData={editingTx}
-        onDelete={handleDelete}
-      />
     </div>
   )
 }

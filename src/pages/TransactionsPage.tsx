@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTransactions } from "../hooks/useTransactions";
+import { useNavigate } from "react-router-dom";
 import { TransactionItem } from "../components/TransactionItem";
-import { TransactionForm } from "../components/TransactionForm";
 import { EmptyState } from "../components/ui/EmptyState";
 import { useCategories } from "../hooks/useCategories";
 import {
@@ -23,11 +23,8 @@ export function TransactionsPage() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>("Daily");
-  const [showForm, setShowForm] = useState(false);
-  const [editingTx, setEditingTx] = useState<TransactionWithDetails | null>(
-    null,
-  );
 
   const handlePrevMonth = () => {
     setFilterMonth((prev) => {
@@ -70,10 +67,6 @@ export function TransactionsPage() {
     transactions,
     loading,
     summary,
-    addTransaction,
-    addTransfer,
-    updateTransaction,
-    deleteTransaction,
   } = useTransactions({
     type: "all",
     startDate: dateRange.start,
@@ -95,32 +88,8 @@ export function TransactionsPage() {
     return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
   }, [transactions, filterType]);
 
-  const handleSubmit = async (data: any) => {
-    if (data.type === "transfer") {
-      return await addTransfer(
-        data.from_account_id,
-        data.to_account_id,
-        data.amount,
-        data.transaction_date,
-        data.note,
-      );
-    }
-
-    if (editingTx) {
-      return await updateTransaction(editingTx.id, data);
-    }
-    return await addTransaction(data);
-  };
-
   const handleEdit = (tx: TransactionWithDetails) => {
-    setEditingTx(tx);
-    setShowForm(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (confirm("Hapus transaksi ini?")) {
-      await deleteTransaction(id);
-    }
+    navigate('/transaction/form', { state: { editData: tx } });
   };
 
   const filters: { value: FilterType; label: string }[] = [
@@ -253,10 +222,7 @@ export function TransactionsPage() {
               title="Belum ada transaksi"
               description="Transaksi yang kamu buat akan muncul di sini"
               actionLabel="Tambah Transaksi"
-              onAction={() => {
-                setEditingTx(null);
-                setShowForm(true);
-              }}
+              onAction={() => navigate('/transaction/form')}
             />
           ) : (
             <div className="space-y-4 mb-6">
@@ -305,10 +271,7 @@ export function TransactionsPage() {
 
       {/* FAB */}
       <button
-        onClick={() => {
-          setEditingTx(null);
-          setShowForm(true);
-        }}
+        onClick={() => navigate('/transaction/form')}
         className="
           fixed bottom-24 right-6 z-30
           w-14 h-14 rounded-2xl
@@ -323,17 +286,6 @@ export function TransactionsPage() {
         <Plus className="w-6 h-6" />
       </button>
 
-      {/* Form Modal */}
-      <TransactionForm
-        isOpen={showForm}
-        onClose={() => {
-          setShowForm(false);
-          setEditingTx(null);
-        }}
-        onSubmit={handleSubmit}
-        editData={editingTx}
-        onDelete={handleDelete}
-      />
     </div>
   );
 }
