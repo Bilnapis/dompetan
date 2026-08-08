@@ -5,7 +5,8 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
@@ -71,9 +72,14 @@ export function BudgetView({ categories, transactions, dateRange, filterMonth, o
   }, [budgetCategories])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        delay: 250, // 250ms hold to start drag
+        distance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250, // 250ms hold to start drag on mobile
         tolerance: 5, // 5px movement cancels the hold
       },
     }),

@@ -1,7 +1,7 @@
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import type { Category } from '../types/database';
-import { formatCurrency } from '../lib/helpers';
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import type { Category } from "../types/database";
+import { formatCurrency } from "../lib/helpers";
 
 interface SortableCategoryItemProps {
   category: Category;
@@ -42,8 +42,10 @@ export function SortableCategoryItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex gap-2 items-start p-2 -mx-2 rounded-xl transition-colors cursor-grab active:cursor-grabbing touch-none ${
-        isDragging ? 'bg-dark-800 shadow-lg' : 'hover:bg-dark-800/30 bg-transparent'
+      className={`flex gap-2 items-start p-2 -mx-2 rounded-xl transition-colors cursor-grab active:cursor-grabbing touch-pan-y select-none ${
+        isDragging
+          ? "touch-none bg-dark-800 shadow-lg"
+          : "hover:bg-dark-800/30 bg-transparent"
       }`}
       {...attributes}
       {...listeners}
@@ -53,7 +55,7 @@ export function SortableCategoryItem({
         {/* Left Side */}
         <div className="w-[100px] shrink-0 flex flex-col gap-0.5 pt-0.5">
           <span className="text-[12px] text-dark-200 flex items-center gap-1.5 truncate">
-            <span>{category.icon || '🏷️'}</span> {category.name}
+            <span>{category.icon || "🏷️"}</span> {category.name}
           </span>
           <span className="text-[13px] font-semibold text-dark-100">
             {formatCurrency(limit)}
@@ -65,7 +67,7 @@ export function SortableCategoryItem({
           <div className="h-6 bg-dark-800 rounded-md overflow-hidden flex relative">
             <div
               className={`h-full transition-all duration-500 ${
-                isExceeded ? 'bg-expense/80' : 'bg-primary-500/80'
+                isExceeded ? "bg-expense/80" : "bg-primary-500/80"
               }`}
               style={{ width: `${Math.min(percentage, 100)}%` }}
             />
@@ -82,15 +84,17 @@ export function SortableCategoryItem({
           <div className="flex justify-between items-center text-[11px]">
             <span
               className={
-                isExceeded ? 'text-expense font-medium' : 'text-primary-400 font-medium'
+                isExceeded
+                  ? "text-expense font-medium"
+                  : "text-primary-400 font-medium"
               }
             >
               {formatCurrency(spent)}
             </span>
             <span className="text-dark-200">
               {isExceeded
-                ? `Excess Rp ${formatCurrency(limit - spent).replace('Rp ', '')}`
-                : `Rp ${formatCurrency(limit - spent).replace('Rp ', '')}`}
+                ? `Excess Rp ${formatCurrency(limit - spent).replace("Rp ", "")}`
+                : `Rp ${formatCurrency(limit - spent).replace("Rp ", "")}`}
             </span>
           </div>
         </div>
