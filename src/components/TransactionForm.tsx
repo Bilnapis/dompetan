@@ -195,16 +195,28 @@ export function TransactionForm({
           </div>
         </div>
 
-        {/* Amount */}
+        {/* Note */}
         <Input
-          type="number"
-          label="Jumlah (Rp)"
-          placeholder="0"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          type="text"
+          label="Catatan"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Misal: Makan siang..."
+          autoFocus
+        />
+
+
+        <Input
+          type="text"
+          inputMode="numeric"
+          label="Jumlah"
+          placeholder="Rp 0"
+          value={amount ? `Rp ${Number(amount).toLocaleString('id-ID')}` : ''}
+          onChange={(e) => {
+            const val = e.target.value.replace(/[^0-9]/g, '')
+            setAmount(val)
+          }}
           required
-          min="1"
-          step="any"
         />
 
         {/* Category */}
@@ -260,25 +272,6 @@ export function TransactionForm({
           required
         />
 
-        {/* Note */}
-        <div className="w-full">
-          <label className="block text-sm font-medium text-dark-300 mb-1.5">
-            Catatan (opsional)
-          </label>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Tambahkan catatan..."
-            rows={2}
-            className="
-              w-full px-4 py-2.5 rounded-xl
-              bg-dark-800 border border-dark-700
-              text-dark-100 placeholder:text-dark-500
-              focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500
-              transition-all duration-200 resize-none
-            "
-          />
-        </div>
 
         {/* Submit */}
         <div className="flex gap-3 pt-2">
