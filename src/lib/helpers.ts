@@ -1,4 +1,4 @@
-import type { WeekendBehavior } from './types/database'
+import type { WeekendBehavior } from '../types/database'
 
 /**
  * Dompetan - Helper Utilities

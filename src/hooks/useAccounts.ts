@@ -27,8 +27,8 @@ export function useAccounts() {
     fetchAccounts()
   }, [fetchAccounts])
 
-  const addAccount = async (data: AccountInsert) => {
-    if (!user) return { error: 'Not authenticated' }
+  const addAccount = async (data: AccountInsert): Promise<{ data: Account | null; error: string | null }> => {
+    if (!user) return { data: null, error: 'Not authenticated' }
 
     const { data: newData, error } = await supabase
       .from('accounts')
@@ -36,10 +36,10 @@ export function useAccounts() {
       .select()
       .single()
 
-    if (error) return { error: error.message }
+    if (error) return { data: null, error: error.message }
 
     await fetchAccounts()
-    return { data: newData, error: null }
+    return { data: newData as Account, error: null }
   }
 
   const adjustBalance = async (accountId: string, difference: number) => {

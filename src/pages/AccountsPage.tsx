@@ -25,13 +25,13 @@ export function AccountsPage() {
     }
     
     const result = await addAccount(data as AccountInsert)
-    if (result.error) return result
+    if (result.error) return { error: result.error }
     
     // Add initial balance transaction if non-zero
     if (desiredBalance !== 0 && result.data) {
       return await adjustBalance(result.data.id, desiredBalance)
     }
-    return result
+    return { error: null }
   }
 
   const handleEdit = (acc: Account) => {

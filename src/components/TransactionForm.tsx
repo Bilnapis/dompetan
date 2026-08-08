@@ -221,7 +221,9 @@ export function TransactionForm({
 
         {/* Account / Dompet */}
         <Select
-          label={type === "transfer" ? "Dari Pos Keuangan" : "Pos Keuangan / Dompet"}
+          label={
+            type === "transfer" ? "Dari Pos Keuangan" : "Pos Keuangan / Dompet"
+          }
           value={accountId}
           onChange={(e) => setAccountId(e.target.value)}
           placeholder="Pilih dompet"

@@ -8,7 +8,7 @@ import { TransactionForm } from '../components/TransactionForm'
 import { EmptyState } from '../components/ui/EmptyState'
 import { formatCurrency, getGreeting, getCurrentCycleRange } from '../lib/helpers'
 import { useSettings } from '../contexts/SettingsContext'
-import type { TransactionWithDetails, TransactionInsert } from '../types/database'
+import type { TransactionWithDetails } from '../types/database'
 
 export function DashboardPage() {
   const { user, signOut } = useAuth()

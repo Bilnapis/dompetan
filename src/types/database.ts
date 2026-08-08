@@ -4,7 +4,7 @@
 
 // ── Enum Types ──────────────────────────
 
-export type CategoryType = 'income' | 'expense'
+export type CategoryType = 'income' | 'expense' | "transfer"
 export type WeekendBehavior = 'none' | 'previous_friday' | 'next_monday'
 
 // ── Row Types (data from database) ─────

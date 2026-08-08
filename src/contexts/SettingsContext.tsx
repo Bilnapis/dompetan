@@ -50,7 +50,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (!settings) {
       const { data: newData, error: insertError } = await supabase
         .from('user_settings')
-        .insert({ user_id: user.id, month_start_date: 1, weekend_behavior: 'none', ...data })
+        .insert({ user_id: user.id, month_start_date: 1, weekend_behavior: 'none', ...data } as never)
         .select()
         .single()
         
@@ -61,7 +61,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     const { data: updatedData, error } = await supabase
       .from('user_settings')
-      .update({ ...data, updated_at: new Date().toISOString() })
+      .update({ ...data, updated_at: new Date().toISOString() } as never)
       .eq('user_id', user.id)
       .select()
       .single()
