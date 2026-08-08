@@ -73,33 +73,35 @@ export function RegisterPage() {
     <div className="min-h-dvh bg-dark-900 flex flex-col items-center justify-center px-6">
       {/* Logo */}
       <div className="mb-8 flex flex-col items-center">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center mb-4 glow-primary">
-          <Wallet className="w-8 h-8 text-white" />
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center mb-4 glow-primary animate-slide-up">
+          <Wallet className="w-8 h-8 text-white animate-float" />
         </div>
-        <h1 className="text-2xl font-bold text-gradient">Dompetan</h1>
-        <p className="text-dark-400 text-sm mt-1">Buat akun baru</p>
+        <h1 className="text-2xl font-bold text-gradient animate-slide-up delay-75">Dompetan</h1>
+        <p className="text-dark-400 text-sm mt-1 animate-slide-up delay-150">Buat akun baru</p>
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         {error && (
-          <div className="p-3 rounded-xl bg-expense/10 border border-expense/20 text-expense text-sm text-center">
+          <div className="p-3 rounded-xl bg-expense/10 border border-expense/20 text-expense text-sm text-center animate-slide-up delay-200">
             {error}
           </div>
         )}
 
-        <Input
-          type="email"
-          label="Email"
-          placeholder="nama@email.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          icon={<Mail className="w-4 h-4" />}
-          required
-          autoComplete="email"
-        />
+        <div className="animate-slide-up delay-200">
+          <Input
+            type="email"
+            label="Email"
+            placeholder="nama@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            icon={<Mail className="w-4 h-4" />}
+            required
+            autoComplete="email"
+          />
+        </div>
 
-        <div className="relative">
+        <div className="relative animate-slide-up delay-300">
           <Input
             type={showPassword ? "text" : "password"}
             label="Password"
@@ -124,28 +126,32 @@ export function RegisterPage() {
           </button>
         </div>
 
-        <Input
-          type={showPassword ? "text" : "password"}
-          label="Konfirmasi Password"
-          placeholder="Ulangi password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          icon={<Lock className="w-4 h-4" />}
-          required
-          autoComplete="new-password"
-        />
+        <div className="animate-slide-up delay-400">
+          <Input
+            type={showPassword ? "text" : "password"}
+            label="Konfirmasi Password"
+            placeholder="Ulangi password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            icon={<Lock className="w-4 h-4" />}
+            required
+            autoComplete="new-password"
+          />
+        </div>
 
-        <Button
-          type="submit"
-          fullWidth
-          loading={loading}
-          size="lg"
-          icon={<UserPlus className="w-4 h-4" />}
-        >
-          Daftar
-        </Button>
+        <div className="animate-slide-up delay-500 pt-2">
+          <Button
+            type="submit"
+            fullWidth
+            loading={loading}
+            size="lg"
+            icon={<UserPlus className="w-4 h-4" />}
+          >
+            Daftar
+          </Button>
+        </div>
 
-        <p className="text-center text-sm text-dark-400">
+        <p className="text-center text-sm text-dark-400 animate-slide-up delay-[600ms]">
           Sudah punya akun?{" "}
           <Link
             to="/login"
