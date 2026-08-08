@@ -5,7 +5,7 @@ import { TransactionItem } from '../components/TransactionItem'
 import { TransactionForm } from '../components/TransactionForm'
 import { EmptyState } from '../components/ui/EmptyState'
 import { formatDateGroup } from '../lib/helpers'
-import type { TransactionWithCategory, TransactionInsert, CategoryType } from '../types/database'
+import type { TransactionWithDetails, TransactionInsert, CategoryType } from '../types/database'
 
 type FilterType = 'all' | CategoryType
 
@@ -16,7 +16,7 @@ export function TransactionsPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
   const [showForm, setShowForm] = useState(false)
-  const [editingTx, setEditingTx] = useState<TransactionWithCategory | null>(null)
+  const [editingTx, setEditingTx] = useState<TransactionWithDetails | null>(null)
 
   // Calculate date range from month filter
   const dateRange = useMemo(() => {
@@ -43,7 +43,7 @@ export function TransactionsPage() {
 
   // Group transactions by date
   const groupedTransactions = useMemo(() => {
-    const groups: Record<string, TransactionWithCategory[]> = {}
+    const groups: Record<string, TransactionWithDetails[]> = {}
     for (const tx of transactions) {
       const dateKey = tx.transaction_date
       if (!groups[dateKey]) groups[dateKey] = []
@@ -59,7 +59,7 @@ export function TransactionsPage() {
     return await addTransaction(data)
   }
 
-  const handleEdit = (tx: TransactionWithCategory) => {
+  const handleEdit = (tx: TransactionWithDetails) => {
     setEditingTx(tx)
     setShowForm(true)
   }

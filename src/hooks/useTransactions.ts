@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import type { TransactionInsert, TransactionUpdate, TransactionWithCategory, CategoryType } from '../types/database'
+import type { TransactionInsert, TransactionUpdate, TransactionWithDetails, CategoryType } from '../types/database'
 
 interface UseTransactionsOptions {
   type?: CategoryType | 'all'
@@ -11,7 +11,7 @@ interface UseTransactionsOptions {
 
 export function useTransactions(options?: UseTransactionsOptions) {
   const { user } = useAuth()
-  const [transactions, setTransactions] = useState<TransactionWithCategory[]>([])
+  const [transactions, setTransactions] = useState<TransactionWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -24,7 +24,7 @@ export function useTransactions(options?: UseTransactionsOptions) {
     try {
       let query = supabase
         .from('transactions')
-        .select('*, category:categories(*)')
+        .select('*, category:categories(*), account:accounts(*)')
         .eq('user_id', user.id)
         .order('transaction_date', { ascending: false })
         .order('created_at', { ascending: false })
@@ -46,7 +46,7 @@ export function useTransactions(options?: UseTransactionsOptions) {
 
       if (fetchError) throw fetchError
 
-      setTransactions((data as unknown as TransactionWithCategory[]) || [])
+      setTransactions((data as unknown as TransactionWithDetails[]) || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memuat transaksi')
     } finally {

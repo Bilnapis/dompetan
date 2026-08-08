@@ -2,16 +2,16 @@
 // Barrel export file
 
 export type {
-  CategoryType,
-  User,
+  Account,
+  AccountInsert,
+  AccountUpdate,
   Category,
-  Transaction,
   CategoryInsert,
-  TransactionInsert,
   CategoryUpdate,
+  Transaction,
+  TransactionInsert,
   TransactionUpdate,
-  TransactionWithCategory,
-  FinancialSummary,
-  MonthlyData,
-  Database,
+  TransactionWithDetails,
+  CategoryType,
+  Database
 } from './database'

@@ -14,6 +14,13 @@ export interface User {
   created_at: string
 }
 
+export interface Account {
+  id: string
+  user_id: string
+  name: string
+  created_at: string
+}
+
 export interface Category {
   id: string
   user_id: string
@@ -27,6 +34,7 @@ export interface Transaction {
   user_id: string
   amount: number
   type: CategoryType
+  account_id: string | null
   category_id: string | null
   note: string | null
   transaction_date: string
@@ -35,15 +43,14 @@ export interface Transaction {
 
 // ── Insert Types (for creating new records) ─
 
-export interface CategoryInsert {
-  name: string
-  type: CategoryType
-  user_id?: string // Will be set by RLS/trigger
-}
+export type AccountInsert = Omit<Account, 'id' | 'created_at' | 'user_id'>
+
+export type CategoryInsert = Omit<Category, 'id' | 'created_at' | 'user_id'>
 
 export interface TransactionInsert {
   amount: number
   type: CategoryType
+  account_id?: string | null
   category_id?: string | null
   note?: string | null
   transaction_date?: string // Defaults to today
@@ -52,14 +59,14 @@ export interface TransactionInsert {
 
 // ── Update Types (partial for editing) ──
 
-export interface CategoryUpdate {
-  name?: string
-  type?: CategoryType
-}
+export type AccountUpdate = Partial<AccountInsert>
+
+export type CategoryUpdate = Partial<CategoryInsert>
 
 export interface TransactionUpdate {
   amount?: number
   type?: CategoryType
+  account_id?: string | null
   category_id?: string | null
   note?: string | null
   transaction_date?: string
@@ -67,8 +74,9 @@ export interface TransactionUpdate {
 
 // ── Joined / View Types ─────────────────
 
-export interface TransactionWithCategory extends Transaction {
+export interface TransactionWithDetails extends Transaction {
   category: Category | null
+  account: Account | null
 }
 
 // ── Supabase Database Type ──────────────
@@ -76,6 +84,11 @@ export interface TransactionWithCategory extends Transaction {
 export interface Database {
   public: {
     Tables: {
+      accounts: {
+        Row: Account
+        Insert: AccountInsert & { user_id: string }
+        Update: AccountUpdate
+      }
       categories: {
         Row: Category
         Insert: CategoryInsert & { user_id: string }

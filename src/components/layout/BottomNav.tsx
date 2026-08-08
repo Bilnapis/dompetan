@@ -1,9 +1,10 @@
 import { useLocation, Link } from 'react-router-dom'
-import { LayoutDashboard, ArrowLeftRight, Tag, User } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, Tag, User, Wallet } from 'lucide-react'
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/transactions', icon: ArrowLeftRight, label: 'Transaksi' },
+  { path: '/accounts', icon: Wallet, label: 'Dompet' },
   { path: '/categories', icon: Tag, label: 'Kategori' },
   { path: '/profile', icon: User, label: 'Profil' },
 ]
@@ -23,8 +24,8 @@ export function BottomNav() {
               key={item.path}
               to={item.path}
               className={`
-                flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl
-                transition-all duration-200 min-w-[64px]
+                flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl
+                transition-all duration-200 min-w-[56px]
                 ${isActive
                   ? 'text-primary-400'
                   : 'text-dark-500 hover:text-dark-300'

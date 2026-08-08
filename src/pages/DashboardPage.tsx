@@ -7,7 +7,7 @@ import { TransactionItem } from '../components/TransactionItem'
 import { TransactionForm } from '../components/TransactionForm'
 import { EmptyState } from '../components/ui/EmptyState'
 import { formatCurrency, getGreeting, getCurrentMonthRange } from '../lib/helpers'
-import type { TransactionWithCategory, TransactionInsert } from '../types/database'
+import type { TransactionWithDetails, TransactionInsert } from '../types/database'
 
 export function DashboardPage() {
   const { user, signOut } = useAuth()
@@ -27,13 +27,13 @@ export function DashboardPage() {
   })
 
   const [showForm, setShowForm] = useState(false)
-  const [editingTx, setEditingTx] = useState<TransactionWithCategory | null>(null)
+  const [editingTx, setEditingTx] = useState<TransactionWithDetails | null>(null)
 
   const handleAdd = async (data: TransactionInsert) => {
     return await addTransaction(data)
   }
 
-  const handleEdit = (tx: TransactionWithCategory) => {
+  const handleEdit = (tx: TransactionWithDetails) => {
     setEditingTx(tx)
     setShowForm(true)
   }

@@ -1,10 +1,10 @@
-import { TrendingUp, TrendingDown, Pencil, Trash2 } from 'lucide-react'
-import type { TransactionWithCategory } from '../types/database'
+import { TrendingUp, TrendingDown, Pencil, Trash2, Wallet } from 'lucide-react'
+import type { TransactionWithDetails } from '../types/database'
 import { formatCurrency, formatDateShort } from '../lib/helpers'
 
 interface TransactionItemProps {
-  transaction: TransactionWithCategory
-  onEdit: (transaction: TransactionWithCategory) => void
+  transaction: TransactionWithDetails
+  onEdit: (transaction: TransactionWithDetails) => void
   onDelete: (id: string) => void
 }
 
@@ -27,8 +27,14 @@ export function TransactionItem({ transaction, onEdit, onDelete }: TransactionIt
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-dark-100 truncate">
+        <p className="text-sm font-medium text-dark-100 truncate flex items-center gap-2">
           {transaction.category?.name || 'Tanpa Kategori'}
+          {transaction.account && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-dark-700 text-dark-300 whitespace-nowrap font-normal">
+              <Wallet className="w-3 h-3" />
+              {transaction.account.name}
+            </span>
+          )}
         </p>
         {transaction.note && (
           <p className="text-xs text-dark-500 truncate">{transaction.note}</p>

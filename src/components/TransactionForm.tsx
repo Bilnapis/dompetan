@@ -3,15 +3,16 @@ import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { Input, Select } from "./ui/Input";
 import { useCategories } from "../hooks/useCategories";
+import { useAccounts } from "../hooks/useAccounts";
 import { toDateInputValue } from "../lib/helpers";
-import type { TransactionWithCategory, CategoryType } from "../types/database";
+import type { TransactionWithDetails, CategoryType } from "../types/database";
 
 interface TransactionFormProps {
   isOpen: boolean;
   onClose: () => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSubmit: (data: any) => Promise<{ error: string | null }>;
-  editData?: TransactionWithCategory | null;
+  editData?: TransactionWithDetails | null;
 }
 
 export function TransactionForm({
@@ -23,6 +24,7 @@ export function TransactionForm({
   const [type, setType] = useState<CategoryType>("expense");
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [accountId, setAccountId] = useState("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(toDateInputValue());
   const [loading, setLoading] = useState(false);
@@ -30,6 +32,7 @@ export function TransactionForm({
 
   // Fetch categories based on selected type
   const { categories } = useCategories(type);
+  const { accounts } = useAccounts();
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -37,6 +40,7 @@ export function TransactionForm({
       setType(editData.type);
       setAmount(String(editData.amount));
       setCategoryId(editData.category_id || "");
+      setAccountId(editData.account_id || "");
       setNote(editData.note || "");
       setDate(toDateInputValue(editData.transaction_date));
     } else {
@@ -48,6 +52,7 @@ export function TransactionForm({
     setType("expense");
     setAmount("");
     setCategoryId("");
+    setAccountId("");
     setNote("");
     setDate(toDateInputValue());
     setError("");
@@ -74,6 +79,7 @@ export function TransactionForm({
       amount: numAmount,
       type,
       category_id: categoryId || null,
+      account_id: accountId || null,
       note: note.trim() || null,
       transaction_date: date,
     };
@@ -166,6 +172,19 @@ export function TransactionForm({
           options={categories.map((cat) => ({
             value: cat.id,
             label: cat.name,
+          }))}
+        />
+
+        {/* Account / Dompet */}
+        <Select
+          label="Pos Keuangan / Dompet"
+          value={accountId}
+          onChange={(e) => setAccountId(e.target.value)}
+          placeholder="Pilih dompet"
+          required
+          options={accounts.map((acc) => ({
+            value: acc.id,
+            label: acc.name,
           }))}
         />
 

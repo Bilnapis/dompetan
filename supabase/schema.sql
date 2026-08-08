@@ -9,6 +9,14 @@ CREATE TYPE transaction_type AS ENUM ('income', 'expense');
 
 -- ── 2. Create Tables ────────────────────
 
+-- Tabel Pos Keuangan / Dompet
+CREATE TABLE accounts (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Tabel Kategori
 CREATE TABLE categories (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -24,6 +32,7 @@ CREATE TABLE transactions (
   user_id           UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   amount            DECIMAL(15, 2) NOT NULL CHECK (amount > 0),
   type              transaction_type NOT NULL,
+  account_id        UUID REFERENCES accounts(id) ON DELETE SET NULL,
   category_id       UUID REFERENCES categories(id) ON DELETE SET NULL,
   note              TEXT,
   transaction_date  DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -33,6 +42,7 @@ CREATE TABLE transactions (
 -- ── 3. Create Indexes ───────────────────
 
 -- Index untuk query per user
+CREATE INDEX idx_accounts_user_id ON accounts(user_id);
 CREATE INDEX idx_categories_user_id ON categories(user_id);
 CREATE INDEX idx_transactions_user_id ON transactions(user_id);
 
@@ -47,10 +57,29 @@ CREATE INDEX idx_transactions_user_type ON transactions(user_id, type);
 
 -- ── 4. Enable Row Level Security ────────
 
+ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 
--- ── 5. RLS Policies - Categories ────────
+-- ── 5. RLS Policies - Accounts ──────────
+
+-- User hanya bisa melihat akun miliknya
+CREATE POLICY "Users can view own accounts"
+  ON accounts FOR SELECT USING (auth.uid() = user_id);
+
+-- User hanya bisa membuat akun untuk dirinya sendiri
+CREATE POLICY "Users can create own accounts"
+  ON accounts FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- User hanya bisa mengubah akun miliknya
+CREATE POLICY "Users can update own accounts"
+  ON accounts FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- User hanya bisa menghapus akun miliknya
+CREATE POLICY "Users can delete own accounts"
+  ON accounts FOR DELETE USING (auth.uid() = user_id);
+
+-- ── 6. RLS Policies - Categories ────────
 
 -- User hanya bisa melihat kategori miliknya
 CREATE POLICY "Users can view own categories"
@@ -77,7 +106,7 @@ CREATE POLICY "Users can delete own categories"
   FOR DELETE
   USING (auth.uid() = user_id);
 
--- ── 6. RLS Policies - Transactions ──────
+-- ── 7. RLS Policies - Transactions ──────
 
 -- User hanya bisa melihat transaksi miliknya
 CREATE POLICY "Users can view own transactions"
@@ -104,12 +133,17 @@ CREATE POLICY "Users can delete own transactions"
   FOR DELETE
   USING (auth.uid() = user_id);
 
--- ── 7. Default Categories (Optional) ───
--- Fungsi untuk membuat kategori default saat user baru mendaftar
+-- ── 8. Default Categories & Account (Optional) ───
+-- Fungsi untuk membuat kategori dan dompet default saat user baru mendaftar
 
 CREATE OR REPLACE FUNCTION create_default_categories()
 RETURNS TRIGGER AS $$
+DECLARE
+  new_account_id UUID;
 BEGIN
+  -- Buat Dompet/Account Default
+  INSERT INTO accounts (user_id, name) VALUES (NEW.id, 'Tunai') RETURNING id INTO new_account_id;
+
   -- Kategori Pemasukan Default
   INSERT INTO categories (user_id, name, type) VALUES
     (NEW.id, 'Gaji', 'income'),
