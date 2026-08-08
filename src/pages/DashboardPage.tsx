@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Wallet, TrendingUp, TrendingDown, Plus, LogOut, ArrowRight } from 'lucide-react'
+import { Wallet, TrendingUp, TrendingDown, Plus, LogOut, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTransactions } from '../hooks/useTransactions'
 import { TransactionItem } from '../components/TransactionItem'
@@ -35,6 +36,24 @@ export function DashboardPage() {
 
   const recentTransactions = transactions.slice(0, 5)
 
+  // State untuk menyembunyikan nominal
+  const [showNominal, setShowNominal] = useState(() => {
+    const saved = localStorage.getItem('showNominal')
+    return saved !== null ? JSON.parse(saved) : true
+  })
+  const [shake, setShake] = useState(false)
+
+  // Simpan state ke localStorage tiap kali berubah
+  useEffect(() => {
+    localStorage.setItem('showNominal', JSON.stringify(showNominal))
+  }, [showNominal])
+
+  const toggleNominal = () => {
+    setShowNominal((prev: boolean) => !prev)
+    setShake(true)
+    setTimeout(() => setShake(false), 200) // durasi animasi shake
+  }
+
   return (
     <div className="max-w-lg mx-auto px-4 pt-6">
       {/* Header */}
@@ -58,8 +77,8 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 gap-3 mb-6">
         {/* Balance Card */}
         <div className="glass rounded-2xl p-5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="flex items-center gap-3 mb-3">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+          <div className="relative z-10 flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-primary-500/15 flex items-center justify-center">
               <Wallet className="w-5 h-5 text-primary-400" />
             </div>
@@ -70,9 +89,18 @@ export function DashboardPage() {
               </span>
             </div>
           </div>
-          <p className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-primary-400' : 'text-expense'}`}>
-            {formatCurrency(summary.balance)}
-          </p>
+          <div className="relative z-10 flex items-center gap-2">
+            <p className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-primary-400' : 'text-expense'} ${shake ? 'animate-shake' : ''}`}>
+              {showNominal ? formatCurrency(summary.balance) : 'Rp ••••••••'}
+            </p>
+            <button
+              onClick={toggleNominal}
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-dark-400 hover:text-primary-400 hover:bg-dark-800 transition-colors cursor-pointer"
+              title={showNominal ? "Sembunyikan Saldo" : "Tampilkan Saldo"}
+            >
+              {showNominal ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
 
         {/* Income & Expense Row */}
@@ -84,8 +112,8 @@ export function DashboardPage() {
               </div>
               <span className="text-xs text-dark-400">Pemasukan</span>
             </div>
-            <p className="text-lg font-bold text-income">
-              {formatCurrency(summary.totalIncome)}
+            <p className={`text-lg font-bold text-income ${shake ? 'animate-shake' : ''}`}>
+              {showNominal ? formatCurrency(summary.totalIncome) : 'Rp ••••••••'}
             </p>
           </div>
           <div className="glass rounded-2xl p-4">
@@ -95,8 +123,8 @@ export function DashboardPage() {
               </div>
               <span className="text-xs text-dark-400">Pengeluaran</span>
             </div>
-            <p className="text-lg font-bold text-expense">
-              {formatCurrency(summary.totalExpense)}
+            <p className={`text-lg font-bold text-expense ${shake ? 'animate-shake' : ''}`}>
+              {showNominal ? formatCurrency(summary.totalExpense) : 'Rp ••••••••'}
             </p>
           </div>
         </div>
