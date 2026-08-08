@@ -20,6 +20,7 @@ export function useCategories(filterType?: CategoryType) {
         .from('categories')
         .select('*')
         .eq('user_id', user.id)
+        .order('sort_order', { ascending: true })
         .order('name', { ascending: true })
 
       if (filterType) {
@@ -85,6 +86,28 @@ export function useCategories(filterType?: CategoryType) {
     return { error: null }
   }
 
+  const reorderCategories = async (updates: { id: string; sort_order: number }[]) => {
+    if (!user) return { error: 'Not authenticated' }
+
+    // Supabase JS doesn't have a built-in bulk update for different rows with different values.
+    // We update them one by one. For better performance, we run them concurrently.
+    const promises = updates.map((update) =>
+      supabase
+        .from('categories')
+        .update({ sort_order: update.sort_order } as never)
+        .eq('id', update.id)
+        .eq('user_id', user.id)
+    )
+
+    const results = await Promise.all(promises)
+    const error = results.find((r) => r.error)?.error
+
+    if (error) return { error: error.message }
+
+    await fetchCategories()
+    return { error: null }
+  }
+
   return {
     categories,
     loading,
@@ -92,6 +115,7 @@ export function useCategories(filterType?: CategoryType) {
     addCategory,
     updateCategory,
     deleteCategory,
+    reorderCategories,
     refetch: fetchCategories,
   }
 }

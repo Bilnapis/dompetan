@@ -38,6 +38,7 @@ export interface Category {
   type: CategoryType
   budget_limit: number
   icon?: string | null
+  sort_order: number
   created_at: string
 }
 

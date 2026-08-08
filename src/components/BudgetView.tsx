@@ -1,19 +1,36 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
 import type { Category, TransactionWithDetails, CategoryBudget } from '../types/database'
 import { formatCurrency } from '../lib/helpers'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { SortableCategoryItem } from './SortableCategoryItem'
 
 interface BudgetViewProps {
   categories: Category[]
   transactions: TransactionWithDetails[]
   dateRange: { start: string; end: string }
   filterMonth: string
+  onReorder?: (updates: { id: string; sort_order: number }[]) => void
 }
 
-export function BudgetView({ categories, transactions, dateRange, filterMonth }: BudgetViewProps) {
+export function BudgetView({ categories, transactions, dateRange, filterMonth, onReorder }: BudgetViewProps) {
   const navigate = useNavigate()
   const { user } = useAuth()
   
@@ -44,6 +61,46 @@ export function BudgetView({ categories, transactions, dateRange, filterMonth }:
       })
       .filter(c => Number(c.budget_limit) > 0)
   }, [categories, monthlyBudgets])
+
+  // Local state for optimistic updates during drag and drop
+  const [localCategories, setLocalCategories] = useState(budgetCategories)
+
+  // Sync local state when props change (except when we are dragging, but useEffect is fine here)
+  useEffect(() => {
+    setLocalCategories(budgetCategories)
+  }, [budgetCategories])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // 5px movement before drag starts, helps with clicking
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = localCategories.findIndex((c) => c.id === active.id)
+      const newIndex = localCategories.findIndex((c) => c.id === over.id)
+
+      const newItems = arrayMove(localCategories, oldIndex, newIndex)
+      setLocalCategories(newItems)
+
+      if (onReorder) {
+        // Calculate the new sort_order based on the new array index
+        const updates = newItems.map((item, index) => ({
+          id: item.id,
+          sort_order: index,
+        }))
+        onReorder(updates)
+      }
+    }
+  }
 
   const totalBudget = useMemo(() => {
     return budgetCategories.reduce((sum, cat) => sum + (Number(cat.budget_limit) || 0), 0)
@@ -152,58 +209,39 @@ export function BudgetView({ categories, transactions, dateRange, filterMonth }:
 
       {/* Category List */}
       <div className="space-y-4 pt-2">
-        {budgetCategories.map(cat => {
-          const limit = Number(cat.budget_limit) || 0
-          const spent = transactions
-            .filter(t => t.category_id === cat.id && t.type === 'expense')
-            .reduce((sum, t) => sum + Number(t.amount), 0)
-          
-          const percentage = limit > 0 ? Math.round((spent / limit) * 100) : (spent > 0 ? 100 : 0)
-          const isExceeded = spent > limit && limit > 0
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={localCategories.map(c => c.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {localCategories.map(cat => {
+              const limit = Number(cat.budget_limit) || 0
+              const spent = transactions
+                .filter(t => t.category_id === cat.id && t.type === 'expense')
+                .reduce((sum, t) => sum + Number(t.amount), 0)
+              
+              const percentage = limit > 0 ? Math.round((spent / limit) * 100) : (spent > 0 ? 100 : 0)
+              const isExceeded = spent > limit && limit > 0
 
-          return (
-            <div key={cat.id} className="flex gap-3 items-start">
-              {/* Left Side */}
-              <div className="w-[110px] shrink-0 flex flex-col gap-0.5 pt-0.5">
-                <span className="text-[12px] text-dark-200 flex items-center gap-1.5 truncate">
-                  <span>{cat.icon || '🏷️'}</span> {cat.name}
-                </span>
-                <span className="text-[13px] font-semibold text-dark-100">{formatCurrency(limit)}</span>
-              </div>
-
-              {/* Right Side */}
-              <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                <div className="h-6 bg-dark-800 rounded-md overflow-hidden flex relative">
-                  <div
-                    className={`h-full transition-all duration-500 ${isExceeded ? 'bg-expense/80' : 'bg-primary-500/80'}`}
-                    style={{ width: `${Math.min(percentage, 100)}%` }}
-                  />
-                  {showTodayMarker && (
-                    <div 
-                      className="absolute top-0 bottom-0 w-0.5 bg-white/70 z-10 shadow-sm"
-                      style={{ left: `${todayPercentage}%` }}
-                    />
-                  )}
-                  <div className="absolute right-2 top-0 bottom-0 flex items-center text-[11px] text-dark-100 font-medium z-10">
-                    {percentage}%
-                  </div>
-                </div>
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className={isExceeded ? 'text-expense font-medium' : 'text-primary-400 font-medium'}>
-                    {formatCurrency(spent)}
-                  </span>
-                  <span className="text-dark-200">
-                    {isExceeded ? (
-                      `Excess Rp ${formatCurrency(limit - spent).replace('Rp ', '')}`
-                    ) : (
-                      `Rp ${formatCurrency(limit - spent).replace('Rp ', '')}`
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )
-        })}
+              return (
+                <SortableCategoryItem
+                  key={cat.id}
+                  category={cat}
+                  limit={limit}
+                  spent={spent}
+                  percentage={percentage}
+                  isExceeded={isExceeded}
+                  showTodayMarker={showTodayMarker}
+                  todayPercentage={todayPercentage}
+                />
+              )
+            })}
+          </SortableContext>
+        </DndContext>
       </div>
     </div>
   )

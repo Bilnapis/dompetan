@@ -57,7 +57,7 @@ export function BudgetPage() {
     endDate: dateRange.end,
   });
 
-  const { categories } = useCategories();
+  const { categories, reorderCategories } = useCategories();
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-6 pb-24">
@@ -109,12 +109,12 @@ export function BudgetPage() {
         </div>
       )}
 
-      {/* Main Budget View */}
       <BudgetView 
         categories={categories} 
         transactions={transactions} 
         dateRange={dateRange} 
         filterMonth={filterMonth} 
+        onReorder={reorderCategories}
       />
     </div>
   );
