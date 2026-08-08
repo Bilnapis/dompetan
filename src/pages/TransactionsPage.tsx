@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Filter } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTransactions } from "../hooks/useTransactions";
 import { TransactionItem } from "../components/TransactionItem";
 import { TransactionForm } from "../components/TransactionForm";
@@ -11,7 +11,7 @@ import {
   formatCurrency,
 } from "../lib/helpers";
 import { useSettings } from "../contexts/SettingsContext";
-import type { TransactionWithDetails, CategoryType } from '../types/database'
+import type { TransactionWithDetails, CategoryType } from "../types/database";
 
 type FilterType = "all" | CategoryType;
 
@@ -26,6 +26,32 @@ export function TransactionsPage() {
   const [editingTx, setEditingTx] = useState<TransactionWithDetails | null>(
     null,
   );
+
+  const handlePrevMonth = () => {
+    setFilterMonth((prev) => {
+      const [year, month] = prev.split("-").map(Number);
+      let newMonth = month - 1;
+      let newYear = year;
+      if (newMonth < 1) {
+        newMonth = 12;
+        newYear -= 1;
+      }
+      return `${newYear}-${String(newMonth).padStart(2, "0")}`;
+    });
+  };
+
+  const handleNextMonth = () => {
+    setFilterMonth((prev) => {
+      const [year, month] = prev.split("-").map(Number);
+      let newMonth = month + 1;
+      let newYear = year;
+      if (newMonth > 12) {
+        newMonth = 1;
+        newYear += 1;
+      }
+      return `${newYear}-${String(newMonth).padStart(2, "0")}`;
+    });
+  };
 
   // Calculate date range from month filter and user settings
   const dateRange = useMemo(() => {
@@ -47,21 +73,23 @@ export function TransactionsPage() {
     updateTransaction,
     deleteTransaction,
   } = useTransactions({
-    type: filterType,
+    type: "all",
     startDate: dateRange.start,
     endDate: dateRange.end,
   });
 
-  // Group transactions by date
+  // Group and filter transactions by date
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, TransactionWithDetails[]> = {};
     for (const tx of transactions) {
+      if (filterType !== "all" && tx.type !== filterType) continue;
+
       const dateKey = tx.transaction_date;
       if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(tx);
     }
     return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
-  }, [transactions]);
+  }, [transactions, filterType]);
 
   const handleSubmit = async (data: any) => {
     if (data.type === "transfer") {
@@ -102,18 +130,40 @@ export function TransactionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-bold text-dark-100">Transaksi</h1>
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-dark-400" />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handlePrevMonth}
+            className="p-1 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
           <input
             type="month"
             value={filterMonth}
             onChange={(e) => setFilterMonth(e.target.value)}
+            onClick={(e) => {
+              try {
+                if ("showPicker" in HTMLInputElement.prototype) {
+                  e.currentTarget.showPicker();
+                }
+              } catch (err) {
+                // Ignore if not supported
+              }
+            }}
             className="
-              bg-dark-800 border border-dark-700 rounded-lg
-              px-3 py-1.5 text-xs text-dark-200
+              w-28 bg-dark-800 border border-dark-700 rounded-lg
+              px-2 py-1.5 text-xs text-dark-200 text-center
               focus:outline-none focus:ring-1 focus:ring-primary-500
+              [&::-webkit-calendar-picker-indicator]:hidden
+              [&::-webkit-datetime-edit]:flex [&::-webkit-datetime-edit]:justify-center
             "
           />
+          <button
+            onClick={handleNextMonth}
+            className="p-1 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
       </div>
 

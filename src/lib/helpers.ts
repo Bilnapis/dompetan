@@ -71,9 +71,12 @@ export function getGreeting(): string {
 /**
  * Format tanggal ke YYYY-MM-DD untuk input date
  */
-export function toDateInputValue(date?: string): string {
-  const d = date ? new Date(date) : new Date()
-  return d.toISOString().split('T')[0]
+export function toDateInputValue(date?: string | Date): string {
+  const d = date ? (typeof date === 'string' ? new Date(date) : date) : new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 /**
@@ -110,8 +113,8 @@ export function getCycleDateRange(
     const start = new Date(targetYear, targetMonth, 1)
     const end = new Date(targetYear, targetMonth + 1, 0)
     return {
-      start: toDateInputValue(start.toISOString()),
-      end: toDateInputValue(end.toISOString()),
+      start: toDateInputValue(start),
+      end: toDateInputValue(end),
     }
   }
 
@@ -137,8 +140,8 @@ export function getCycleDateRange(
   endDate.setDate(endDate.getDate() - 1)
 
   return {
-    start: toDateInputValue(startDate.toISOString()),
-    end: toDateInputValue(endDate.toISOString()),
+    start: toDateInputValue(startDate),
+    end: toDateInputValue(endDate),
   }
 }
 

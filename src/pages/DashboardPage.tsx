@@ -6,7 +6,7 @@ import { useTransactions } from '../hooks/useTransactions'
 import { TransactionItem } from '../components/TransactionItem'
 import { TransactionForm } from '../components/TransactionForm'
 import { EmptyState } from '../components/ui/EmptyState'
-import { formatCurrency, getGreeting, getCurrentCycleRange } from '../lib/helpers'
+import { formatCurrency, getGreeting, getCurrentCycleRange, formatDateShort } from '../lib/helpers'
 import { useSettings } from '../contexts/SettingsContext'
 import type { TransactionWithDetails } from '../types/database'
 
@@ -94,7 +94,12 @@ export function DashboardPage() {
             <div className="w-10 h-10 rounded-xl bg-primary-500/15 flex items-center justify-center">
               <Wallet className="w-5 h-5 text-primary-400" />
             </div>
-            <span className="text-sm text-dark-400">Saldo Bulan Ini</span>
+            <div className="flex flex-col">
+              <span className="text-sm text-dark-400">Saldo Bulan Ini</span>
+              <span className="text-[10px] text-dark-500">
+                {formatDateShort(monthRange.start)} - {formatDateShort(monthRange.end)}
+              </span>
+            </div>
           </div>
           <p className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-primary-400' : 'text-expense'}`}>
             {formatCurrency(summary.balance)}
@@ -160,7 +165,6 @@ export function DashboardPage() {
                   key={tx.id}
                   transaction={tx}
                   onEdit={handleEdit}
-                  onDelete={handleDelete}
                 />
               ))}
             </div>
@@ -191,6 +195,7 @@ export function DashboardPage() {
         onClose={() => { setShowForm(false); setEditingTx(null) }}
         onSubmit={handleSubmit}
         editData={editingTx}
+        onDelete={handleDelete}
       />
     </div>
   )
