@@ -6,6 +6,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Button } from '../components/ui/Button'
 import { formatCurrency } from '../lib/helpers'
 import type { Account, AccountInsert, AccountUpdate } from '../types/database'
+import { AccountListSkeleton } from '../components/ui/Skeleton'
 
 export function AccountsPage() {
   const { accounts, loading, addAccount, updateAccount, deleteAccount, adjustBalance } = useAccounts()
@@ -82,9 +83,7 @@ export function AccountsPage() {
 
       {/* Accounts List */}
       {loading ? (
-        <div className="py-12 flex justify-center">
-          <div className="w-6 h-6 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <AccountListSkeleton count={3} />
       ) : accounts.length === 0 ? (
         <EmptyState
           icon={<Wallet className="w-8 h-8 text-dark-500" />}

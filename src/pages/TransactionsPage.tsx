@@ -12,6 +12,7 @@ import {
   formatCurrency,
 } from "../lib/helpers";
 import { useSettings } from "../contexts/SettingsContext";
+import { TransactionListSkeleton } from "../components/ui/Skeleton";
 import type { TransactionWithDetails, CategoryType } from "../types/database";
 
 type FilterType = "all" | CategoryType;
@@ -214,9 +215,7 @@ export function TransactionsPage() {
 
           {/* Transactions List */}
           {loading ? (
-            <div className="py-12 flex justify-center">
-              <div className="w-6 h-6 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
-            </div>
+            <TransactionListSkeleton count={5} />
           ) : groupedTransactions.length === 0 ? (
             <EmptyState
               title="Belum ada transaksi"

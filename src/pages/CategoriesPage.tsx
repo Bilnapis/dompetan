@@ -7,6 +7,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Button } from '../components/ui/Button'
 import { formatCurrency } from '../lib/helpers'
 import type { Category, CategoryInsert, CategoryUpdate, CategoryType } from '../types/database'
+import { CategoryListSkeleton } from '../components/ui/Skeleton'
 
 export function CategoriesPage() {
   const navigate = useNavigate()
@@ -76,9 +77,7 @@ export function CategoriesPage() {
 
       {/* Category List */}
       {loading ? (
-        <div className="py-12 flex justify-center">
-          <div className="w-6 h-6 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <CategoryListSkeleton count={5} />
       ) : categories.length === 0 ? (
         <EmptyState
           icon={<Tag className="w-8 h-8 text-dark-500" />}

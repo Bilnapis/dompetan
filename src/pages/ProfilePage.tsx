@@ -7,6 +7,7 @@ import { usePWAInstall } from '../hooks'
 import { Button } from '../components/ui/Button'
 import { Input, Select } from '../components/ui/Input'
 import type { WeekendBehavior } from '../types/database'
+import { SettingsFormSkeleton } from '../components/ui/Skeleton'
 
 export function ProfilePage() {
   const navigate = useNavigate()
@@ -91,7 +92,7 @@ export function ProfilePage() {
         </div>
 
         {settingsLoading ? (
-          <div className="text-sm text-dark-400 py-2">Memuat pengaturan...</div>
+          <SettingsFormSkeleton />
         ) : (
           <div className="space-y-4">
             <Input

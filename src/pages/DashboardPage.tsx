@@ -7,6 +7,7 @@ import { TransactionItem } from '../components/TransactionItem'
 import { EmptyState } from '../components/ui/EmptyState'
 import { formatCurrency, getGreeting, getCurrentCycleRange, formatDateShort } from '../lib/helpers'
 import { useSettings } from '../contexts/SettingsContext'
+import { DashboardSummarySkeleton } from '../components/ui/Skeleton'
 import type { TransactionWithDetails } from '../types/database'
 
 export function DashboardPage() {
@@ -145,9 +146,7 @@ export function DashboardPage() {
 
         <div className="glass rounded-2xl overflow-hidden">
           {loading ? (
-            <div className="py-8 flex justify-center">
-              <div className="w-6 h-6 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
-            </div>
+            <DashboardSummarySkeleton />
           ) : recentTransactions.length === 0 ? (
             <EmptyState
               title="Belum ada transaksi"
