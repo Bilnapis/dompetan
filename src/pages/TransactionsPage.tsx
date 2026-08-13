@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { Plus, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { useTransactions } from "../hooks/useTransactions";
 import { useNavigate } from "react-router-dom";
 import { TransactionItem } from "../components/TransactionItem";
@@ -8,6 +8,7 @@ import { useCategories } from "../hooks/useCategories";
 import {
   formatDateGroup,
   getCycleDateRange,
+  getCurrentCycleMonth,
   formatDateShort,
   formatCurrency,
 } from "../lib/helpers";
@@ -18,76 +19,118 @@ import type { TransactionWithDetails, CategoryType } from "../types/database";
 type FilterType = "all" | CategoryType;
 
 export function TransactionsPage() {
-  const { settings } = useSettings();
+  const { settings, loading: settingsLoading } = useSettings();
   const [filterType, setFilterType] = useState<FilterType>("all");
-  const [filterMonth, setFilterMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [filterMonth, setFilterMonth] = useState<string | null>(null);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>("Daily");
 
+  // Initialize filterMonth once settings are loaded
+  const resolvedFilterMonth = useMemo(() => {
+    if (filterMonth !== null) return filterMonth;
+    if (settingsLoading) return null;
+    return getCurrentCycleMonth(
+      settings?.month_start_date || 1,
+      settings?.weekend_behavior || "none"
+    );
+  }, [filterMonth, settingsLoading, settings]);
+
   const handlePrevMonth = () => {
-    setFilterMonth((prev) => {
-      const [year, month] = prev.split("-").map(Number);
-      let newMonth = month - 1;
-      let newYear = year;
-      if (newMonth < 1) {
-        newMonth = 12;
-        newYear -= 1;
-      }
-      return `${newYear}-${String(newMonth).padStart(2, "0")}`;
-    });
+    const base = filterMonth ?? resolvedFilterMonth;
+    if (!base) return;
+    const [year, month] = base.split("-").map(Number);
+    let newMonth = month - 1;
+    let newYear = year;
+    if (newMonth < 1) {
+      newMonth = 12;
+      newYear -= 1;
+    }
+    setFilterMonth(`${newYear}-${String(newMonth).padStart(2, "0")}`);
   };
 
   const handleNextMonth = () => {
-    setFilterMonth((prev) => {
-      const [year, month] = prev.split("-").map(Number);
-      let newMonth = month + 1;
-      let newYear = year;
-      if (newMonth > 12) {
-        newMonth = 1;
-        newYear += 1;
-      }
-      return `${newYear}-${String(newMonth).padStart(2, "0")}`;
-    });
+    const base = filterMonth ?? resolvedFilterMonth;
+    if (!base) return;
+    const [year, month] = base.split("-").map(Number);
+    let newMonth = month + 1;
+    let newYear = year;
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear += 1;
+    }
+    setFilterMonth(`${newYear}-${String(newMonth).padStart(2, "0")}`);
   };
 
   // Calculate date range from month filter and user settings
   const dateRange = useMemo(() => {
-    const [year, month] = filterMonth.split("-").map(Number);
+    if (!resolvedFilterMonth) return null;
+    const [year, month] = resolvedFilterMonth.split("-").map(Number);
     return getCycleDateRange(
       year,
       month - 1, // 0-indexed month
       settings?.month_start_date || 1,
       settings?.weekend_behavior || "none",
     );
-  }, [filterMonth, settings]);
+  }, [resolvedFilterMonth, settings]);
 
   const {
     transactions,
     loading,
-    summary,
-  } = useTransactions({
+  } = useTransactions(dateRange ? {
     type: "all",
     startDate: dateRange.start,
     endDate: dateRange.end,
-  });
+  } : undefined);
 
   useCategories();
 
-  // Group and filter transactions by date
+  // Group and filter transactions by date and search query
   const groupedTransactions = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
     const groups: Record<string, TransactionWithDetails[]> = {};
     for (const tx of transactions) {
       if (filterType !== "all" && tx.type !== filterType) continue;
+
+      // Search filter: match note, category name, or account name
+      if (query) {
+        const note = (tx.note || "").toLowerCase();
+        const categoryName = (tx.category?.name || "").toLowerCase();
+        const accountName = (tx.account?.name || "").toLowerCase();
+        const amountStr = String(tx.amount);
+        if (
+          !note.includes(query) &&
+          !categoryName.includes(query) &&
+          !accountName.includes(query) &&
+          !amountStr.includes(query)
+        ) {
+          continue;
+        }
+      }
 
       const dateKey = tx.transaction_date;
       if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(tx);
     }
     return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
-  }, [transactions, filterType]);
+  }, [transactions, filterType, searchQuery]);
+
+  // Compute summary from the visible (filtered) transactions
+  const filteredSummary = useMemo(() => {
+    const allFiltered = groupedTransactions.flatMap(([, txs]) => txs);
+    const totalIncome = allFiltered
+      .filter((t) => t.type === "income" && t.category_id !== null)
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+    const totalExpense = allFiltered
+      .filter((t) => t.type === "expense" && t.category_id !== null)
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+    return {
+      totalIncome,
+      totalExpense,
+      balance: totalIncome - totalExpense,
+    };
+  }, [groupedTransactions]);
 
   const handleEdit = (tx: TransactionWithDetails) => {
     navigate('/transaction/form', { state: { editData: tx } });
@@ -113,7 +156,7 @@ export function TransactionsPage() {
           </button>
           <input
             type="month"
-            value={filterMonth}
+            value={resolvedFilterMonth || ""}
             onChange={(e) => setFilterMonth(e.target.value)}
             onClick={(e) => {
               try {
@@ -142,7 +185,7 @@ export function TransactionsPage() {
       </div>
 
       {/* Indicator of actual date range */}
-      {(settings?.month_start_date ?? 1) > 1 && (
+      {(settings?.month_start_date ?? 1) > 1 && dateRange && (
         <div className="text-[10px] text-dark-400 text-right -mt-4 mb-4 pr-1">
           Rentang: {formatDateShort(dateRange.start)} -{" "}
           {formatDateShort(dateRange.end)}
@@ -174,21 +217,21 @@ export function TransactionsPage() {
             <div className="glass rounded-xl p-3 text-center">
               <p className="text-[10px] text-dark-400 mb-1">Pemasukan</p>
               <p className="text-sm font-bold text-income">
-                {formatCurrency(summary.totalIncome)}
+                {formatCurrency(filteredSummary.totalIncome)}
               </p>
             </div>
             <div className="glass rounded-xl p-3 text-center">
               <p className="text-[10px] text-dark-400 mb-1">Pengeluaran</p>
               <p className="text-sm font-bold text-expense">
-                {formatCurrency(summary.totalExpense)}
+                {formatCurrency(filteredSummary.totalExpense)}
               </p>
             </div>
             <div className="glass rounded-xl p-3 text-center">
               <p className="text-[10px] text-dark-400 mb-1">Selisih</p>
               <p
-                className={`text-sm font-bold ${summary.balance >= 0 ? "text-primary-400" : "text-expense"}`}
+                className={`text-sm font-bold ${filteredSummary.balance >= 0 ? "text-primary-400" : "text-expense"}`}
               >
-                {formatCurrency(summary.balance)}
+                {formatCurrency(filteredSummary.balance)}
               </p>
             </div>
           </div>
@@ -213,16 +256,56 @@ export function TransactionsPage() {
             ))}
           </div>
 
+          {/* Search Bar */}
+          <div className="relative mb-5 group">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Search className="w-4 h-4 text-dark-500 group-focus-within:text-primary-400 transition-colors" />
+            </div>
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari transaksi..."
+              className="
+                w-full pl-10 pr-9 py-2.5 text-sm
+                bg-dark-800/60 border border-dark-700/60 rounded-xl
+                text-dark-100 placeholder:text-dark-500
+                focus:outline-none focus:ring-1 focus:ring-primary-500/50 focus:border-primary-500/50
+                focus:bg-dark-800
+                transition-all duration-200
+              "
+            />
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  searchInputRef.current?.focus();
+                }}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-dark-500 hover:text-dark-300 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
           {/* Transactions List */}
           {loading ? (
             <TransactionListSkeleton count={5} />
           ) : groupedTransactions.length === 0 ? (
-            <EmptyState
-              title="Belum ada transaksi"
-              description="Transaksi yang kamu buat akan muncul di sini"
-              actionLabel="Tambah Transaksi"
-              onAction={() => navigate('/transaction/form')}
-            />
+            searchQuery ? (
+              <EmptyState
+                title="Tidak ditemukan"
+                description={`Tidak ada transaksi yang cocok dengan "${searchQuery}"`}
+              />
+            ) : (
+              <EmptyState
+                title="Belum ada transaksi"
+                description="Transaksi yang kamu buat akan muncul di sini"
+                actionLabel="Tambah Transaksi"
+                onAction={() => navigate('/transaction/form')}
+              />
+            )
           ) : (
             <div className="space-y-4 mb-6">
               {groupedTransactions.map(([date, txs]) => {

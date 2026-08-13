@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "../components/ui/Button";
@@ -16,18 +16,21 @@ export function TransactionFormPage() {
   const location = useLocation();
   const editData = (location.state as any)
     ?.editData as TransactionWithDetails | null;
-  const { settings } = useSettings();
+  const { settings, loading: settingsLoading } = useSettings();
 
-  const monthRange = getCurrentCycleRange(
-    settings?.month_start_date || 1,
-    settings?.weekend_behavior || "none",
-  );
+  const monthRange = useMemo(() => {
+    if (settingsLoading) return null;
+    return getCurrentCycleRange(
+      settings?.month_start_date || 1,
+      settings?.weekend_behavior || "none",
+    );
+  }, [settings, settingsLoading]);
 
   const { addTransaction, addTransfer, updateTransaction, deleteTransaction } =
-    useTransactions({
+    useTransactions(monthRange ? {
       startDate: monthRange.start,
       endDate: monthRange.end,
-    });
+    } : undefined);
 
   const [type, setType] = useState<CategoryType | "transfer">("expense");
   const [amount, setAmount] = useState("");

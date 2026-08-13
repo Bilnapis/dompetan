@@ -179,3 +179,34 @@ export function getCurrentCycleRange(
 
   return getCycleDateRange(targetYear, targetMonth, startDay, weekendBehavior)
 }
+
+/**
+ * Get the YYYY-MM string for the current billing cycle month.
+ * Uses the same logic as getCurrentCycleRange to determine the correct target month.
+ */
+export function getCurrentCycleMonth(
+  startDay: number = 1,
+  weekendBehavior: WeekendBehavior = 'none'
+): string {
+  const now = new Date()
+  let targetMonth = now.getMonth()
+  let targetYear = now.getFullYear()
+
+  if (startDay > 1) {
+    let rawThisCycleStart = new Date(targetYear, targetMonth, startDay)
+    if (rawThisCycleStart.getMonth() !== targetMonth) {
+      rawThisCycleStart = new Date(targetYear, targetMonth + 1, 0)
+    }
+    const thisCycleStart = adjustForWeekend(rawThisCycleStart, weekendBehavior)
+
+    if (now >= thisCycleStart) {
+      targetMonth += 1
+      if (targetMonth > 11) {
+        targetMonth = 0
+        targetYear += 1
+      }
+    }
+  }
+
+  return `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`
+}

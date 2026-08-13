@@ -18,6 +18,12 @@ export function useTransactions(options?: UseTransactionsOptions) {
   const fetchTransactions = useCallback(async () => {
     if (!user) return
 
+    // Skip fetch if no options provided (waiting for settings to load)
+    if (!options) {
+      setLoading(true)
+      return
+    }
+
     setLoading(true)
     setError(null)
 

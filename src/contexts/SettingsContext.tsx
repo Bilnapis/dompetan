@@ -16,17 +16,26 @@ const SettingsContext = createContext<SettingsContextType>({
 })
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [settings, setSettings] = useState<UserSetting | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchSettings() {
+      // While auth is still resolving, keep loading=true and wait
+      if (authLoading) {
+        setLoading(true)
+        return
+      }
+
       if (!user) {
         setSettings(null)
         setLoading(false)
         return
       }
+
+      // Reset loading when starting a new fetch
+      setLoading(true)
 
       const { data, error } = await supabase
         .from('user_settings')
@@ -41,7 +50,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
 
     fetchSettings()
-  }, [user])
+  }, [user, authLoading])
 
   const updateSettings = async (data: UserSettingUpdate) => {
     if (!user) return { error: 'Not authenticated' }

@@ -4,58 +4,66 @@ import { useCategories } from "../hooks/useCategories";
 import { useTransactions } from "../hooks/useTransactions";
 import { BudgetView } from "../components/BudgetView";
 import { useSettings } from "../contexts/SettingsContext";
-import { getCycleDateRange, formatDateShort } from "../lib/helpers";
+import { getCycleDateRange, getCurrentCycleMonth, formatDateShort } from "../lib/helpers";
 
 export function BudgetPage() {
-  const { settings } = useSettings();
+  const { settings, loading: settingsLoading } = useSettings();
   
-  const [filterMonth, setFilterMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  });
+  const [filterMonth, setFilterMonth] = useState<string | null>(null);
+
+  // Initialize filterMonth once settings are loaded
+  const resolvedFilterMonth = useMemo(() => {
+    if (filterMonth !== null) return filterMonth;
+    if (settingsLoading) return null;
+    return getCurrentCycleMonth(
+      settings?.month_start_date || 1,
+      settings?.weekend_behavior || "none"
+    );
+  }, [filterMonth, settingsLoading, settings]);
 
   const handlePrevMonth = () => {
-    setFilterMonth((prev) => {
-      const [year, month] = prev.split("-").map(Number);
-      let newMonth = month - 1;
-      let newYear = year;
-      if (newMonth < 1) {
-        newMonth = 12;
-        newYear -= 1;
-      }
-      return `${newYear}-${String(newMonth).padStart(2, "0")}`;
-    });
+    const base = filterMonth ?? resolvedFilterMonth;
+    if (!base) return;
+    const [year, month] = base.split("-").map(Number);
+    let newMonth = month - 1;
+    let newYear = year;
+    if (newMonth < 1) {
+      newMonth = 12;
+      newYear -= 1;
+    }
+    setFilterMonth(`${newYear}-${String(newMonth).padStart(2, "0")}`);
   };
 
   const handleNextMonth = () => {
-    setFilterMonth((prev) => {
-      const [year, month] = prev.split("-").map(Number);
-      let newMonth = month + 1;
-      let newYear = year;
-      if (newMonth > 12) {
-        newMonth = 1;
-        newYear += 1;
-      }
-      return `${newYear}-${String(newMonth).padStart(2, "0")}`;
-    });
+    const base = filterMonth ?? resolvedFilterMonth;
+    if (!base) return;
+    const [year, month] = base.split("-").map(Number);
+    let newMonth = month + 1;
+    let newYear = year;
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear += 1;
+    }
+    setFilterMonth(`${newYear}-${String(newMonth).padStart(2, "0")}`);
   };
 
   // Calculate date range from month filter and user settings
   const dateRange = useMemo(() => {
-    const [year, month] = filterMonth.split("-").map(Number);
+    if (!resolvedFilterMonth) return null;
+    const [year, month] = resolvedFilterMonth.split("-").map(Number);
     return getCycleDateRange(
       year,
       month - 1, // 0-indexed month
       settings?.month_start_date || 1,
       settings?.weekend_behavior || "none",
     );
-  }, [filterMonth, settings]);
+  }, [resolvedFilterMonth, settings]);
 
-  const { transactions } = useTransactions({
+  const { transactions } = useTransactions(dateRange ? {
     type: "all",
     startDate: dateRange.start,
     endDate: dateRange.end,
-  });
+  } : undefined);
 
   const { categories, reorderCategories } = useCategories();
 
@@ -73,7 +81,7 @@ export function BudgetPage() {
           </button>
           <input
             type="month"
-            value={filterMonth}
+            value={resolvedFilterMonth || ""}
             onChange={(e) => setFilterMonth(e.target.value)}
             onClick={(e) => {
               try {
@@ -102,20 +110,22 @@ export function BudgetPage() {
       </div>
 
       {/* Indicator of actual date range */}
-      {(settings?.month_start_date ?? 1) > 1 && (
+      {(settings?.month_start_date ?? 1) > 1 && dateRange && (
         <div className="text-[10px] text-dark-400 text-right -mt-4 mb-4 pr-1">
           Rentang: {formatDateShort(dateRange.start)} -{" "}
           {formatDateShort(dateRange.end)}
         </div>
       )}
 
-      <BudgetView 
-        categories={categories} 
-        transactions={transactions} 
-        dateRange={dateRange} 
-        filterMonth={filterMonth} 
-        onReorder={reorderCategories}
-      />
+      {dateRange && (
+        <BudgetView 
+          categories={categories} 
+          transactions={transactions} 
+          dateRange={dateRange} 
+          filterMonth={resolvedFilterMonth || ""} 
+          onReorder={reorderCategories}
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Wallet, TrendingUp, TrendingDown, Plus, LogOut, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -12,22 +12,25 @@ import type { TransactionWithDetails } from '../types/database'
 
 export function DashboardPage() {
   const { user, signOut } = useAuth()
-  const { settings } = useSettings()
+  const { settings, loading: settingsLoading } = useSettings()
   const navigate = useNavigate()
   
-  const monthRange = getCurrentCycleRange(
-    settings?.month_start_date || 1, 
-    settings?.weekend_behavior || 'none'
-  )
+  const monthRange = useMemo(() => {
+    if (settingsLoading) return null
+    return getCurrentCycleRange(
+      settings?.month_start_date || 1, 
+      settings?.weekend_behavior || 'none'
+    )
+  }, [settings, settingsLoading])
 
   const {
     transactions,
     loading,
     summary,
-  } = useTransactions({
+  } = useTransactions(monthRange ? {
     startDate: monthRange.start,
     endDate: monthRange.end,
-  })
+  } : undefined)
 
   const handleEdit = (tx: TransactionWithDetails) => {
     navigate('/transaction/form', { state: { editData: tx } })
@@ -86,7 +89,7 @@ export function DashboardPage() {
             <div className="flex flex-col">
               <span className="text-sm text-dark-400">Saldo Bulan Ini</span>
               <span className="text-[10px] text-dark-500">
-                {formatDateShort(monthRange.start)} - {formatDateShort(monthRange.end)}
+                {monthRange ? `${formatDateShort(monthRange.start)} - ${formatDateShort(monthRange.end)}` : '...'}
               </span>
             </div>
           </div>
