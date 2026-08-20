@@ -5,9 +5,14 @@ import { formatCurrency, formatDateShort } from "../lib/helpers";
 interface TransactionItemProps {
   transaction: TransactionWithDetails;
   onEdit: (transaction: TransactionWithDetails) => void;
+  showDate?: boolean;
 }
 
-export function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
+export function TransactionItem({
+  transaction,
+  onEdit,
+  showDate = true,
+}: TransactionItemProps) {
   const isIncome = transaction.type === "income";
   const isTransfer = transaction.category_id === null;
 
@@ -72,9 +77,11 @@ export function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
           {isIncome ? "+" : "-"}
           {formatCurrency(Number(transaction.amount))}
         </p>
-        <p className="text-[10px] text-dark-500">
-          {formatDateShort(transaction.transaction_date)}
-        </p>
+        {showDate && (
+          <p className="text-[10px] text-dark-500">
+            {formatDateShort(transaction.transaction_date)}
+          </p>
+        )}
       </div>
     </div>
   );

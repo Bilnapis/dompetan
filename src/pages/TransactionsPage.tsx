@@ -751,6 +751,7 @@ export function TransactionsPage() {
                           key={tx.id}
                           transaction={tx}
                           onEdit={handleEdit}
+                          showDate={false}
                         />
                       ))}
                     </div>
