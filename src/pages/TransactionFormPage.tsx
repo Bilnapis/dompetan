@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "../components/ui/Button";
-import { Input, Select } from "../components/ui/Input";
+import { Input } from "../components/ui/Input";
 import { CategoryPickerSheet } from "../components/ui/CategoryPickerSheet";
+import { AccountPickerSheet } from "../components/ui/AccountPickerSheet";
 import { useCategories } from "../hooks/useCategories";
 import { useAccounts } from "../hooks/useAccounts";
 import { useTransactions } from "../hooks/useTransactions";
@@ -42,13 +43,17 @@ export function TransactionFormPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [showAccountPicker, setShowAccountPicker] = useState(false);
+  const [showToAccountPicker, setShowToAccountPicker] = useState(false);
 
   // Fetch categories based on selected type
   const { categories } = useCategories(type);
   const { accounts } = useAccounts();
 
-  // Find selected category for display
+  // Find selected category / account for display
   const selectedCategory = categories.find((c) => c.id === categoryId);
+  const selectedAccount = accounts.find((a) => a.id === accountId);
+  const selectedToAccount = accounts.find((a) => a.id === toAccountId);
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -267,35 +272,41 @@ export function TransactionFormPage() {
           )}
 
           {/* Account / Dompet */}
-          <Select
-            label={
-              type === "transfer"
-                ? "Dari Pos Keuangan"
-                : "Pos Keuangan / Dompet"
-            }
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-            placeholder="Pilih dompet"
-            required
-            options={accounts.map((acc) => ({
-              value: acc.id,
-              label: acc.name,
-            }))}
-          />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-dark-300 mb-1.5">
+              {type === "transfer" ? "Dari Pos Keuangan" : "Pos Keuangan / Dompet"}
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowAccountPicker(true)}
+              className="w-full px-4 py-2.5 rounded-xl text-left bg-dark-800 border border-dark-700 transition-all duration-200 hover:border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 flex items-center gap-3"
+            >
+              {selectedAccount ? (
+                <span className="text-dark-100 text-sm">{selectedAccount.name}</span>
+              ) : (
+                <span className="text-dark-500 text-sm">Pilih pos keuangan</span>
+              )}
+            </button>
+          </div>
 
           {/* To Account (Only for Transfer) */}
           {type === "transfer" && (
-            <Select
-              label="Ke Pos Keuangan"
-              value={toAccountId}
-              onChange={(e) => setToAccountId(e.target.value)}
-              placeholder="Pilih dompet tujuan"
-              required
-              options={accounts.map((acc) => ({
-                value: acc.id,
-                label: acc.name,
-              }))}
-            />
+            <div className="w-full">
+              <label className="block text-sm font-medium text-dark-300 mb-1.5">
+                Ke Pos Keuangan
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowToAccountPicker(true)}
+                className="w-full px-4 py-2.5 rounded-xl text-left bg-dark-800 border border-dark-700 transition-all duration-200 hover:border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 flex items-center gap-3"
+              >
+                {selectedToAccount ? (
+                  <span className="text-dark-100 text-sm">{selectedToAccount.name}</span>
+                ) : (
+                  <span className="text-dark-500 text-sm">Pilih pos keuangan tujuan</span>
+                )}
+              </button>
+            </div>
           )}
 
           {/* Date */}
@@ -342,6 +353,26 @@ export function TransactionFormPage() {
           categories={categories}
           selectedId={categoryId}
           onSelect={(id) => setCategoryId(id)}
+        />
+      )}
+
+      {/* Account Picker Bottom Sheets */}
+      <AccountPickerSheet
+        isOpen={showAccountPicker}
+        onClose={() => setShowAccountPicker(false)}
+        accounts={accounts}
+        selectedId={accountId}
+        onSelect={(id) => setAccountId(id)}
+        title={type === "transfer" ? "Dari Pos Keuangan" : "Pos Keuangan / Dompet"}
+      />
+      {type === "transfer" && (
+        <AccountPickerSheet
+          isOpen={showToAccountPicker}
+          onClose={() => setShowToAccountPicker(false)}
+          accounts={accounts}
+          selectedId={toAccountId}
+          onSelect={(id) => setToAccountId(id)}
+          title="Ke Pos Keuangan"
         />
       )}
     </div>
