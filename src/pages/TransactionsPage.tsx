@@ -6,7 +6,6 @@ import { TransactionItem } from "../components/TransactionItem";
 import { EmptyState } from "../components/ui/EmptyState";
 import { useCategories } from "../hooks/useCategories";
 import {
-  formatDateGroup,
   getCycleDateRange,
   getCurrentCycleMonth,
   formatDateShort,
@@ -95,6 +94,13 @@ const SHORT_MONTHS = [
   "Nov",
   "Des",
 ];
+
+const DAY_NAMES_SHORT = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
 
 export function TransactionsPage() {
   const { settings, loading: settingsLoading } = useSettings();
@@ -699,6 +705,10 @@ export function TransactionsPage() {
           ) : (
             <div className="space-y-4 mb-6">
               {groupedTransactions.map(([date, txs]) => {
+                const groupDate = parseLocalDate(date);
+                const dayNum = groupDate.getDate();
+                const dayName = DAY_NAMES_SHORT[groupDate.getDay()];
+                const monthYear = `${String(groupDate.getMonth() + 1).padStart(2, "0")}.${groupDate.getFullYear()}`;
                 const dailyIncome = txs
                   .filter((t) => t.type === "income" && t.category_id !== null)
                   .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -707,12 +717,22 @@ export function TransactionsPage() {
                   .reduce((sum, t) => sum + Number(t.amount), 0);
 
                 return (
-                  <div key={date}>
-                    <div className="flex items-center justify-between mb-2 px-1">
-                      <p className="text-xs font-medium text-dark-500">
-                        {formatDateGroup(date)}
-                      </p>
-                      <div className="flex gap-3 text-[10px] font-semibold">
+                  <div key={date} className="glass rounded-2xl overflow-hidden">
+                    <div className="flex items-center gap-3 px-4 py-3 border-b border-dark-700/50">
+                      <span className="text-4xl font-bold text-dark-100 leading-none w-12 shrink-0">
+                        {dayNum}
+                      </span>
+
+                      <div className="flex flex-col gap-0.5">
+                        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-dark-700 text-[10px] font-semibold text-dark-300 w-fit">
+                          {dayName}
+                        </span>
+                        <span className="text-xs text-dark-500">{monthYear}</span>
+                      </div>
+
+                      <div className="flex-1" />
+
+                      <div className="flex items-center gap-3 text-sm font-semibold">
                         {dailyIncome > 0 && (
                           <span className="text-income">
                             +{formatCurrency(dailyIncome)}
@@ -725,7 +745,7 @@ export function TransactionsPage() {
                         )}
                       </div>
                     </div>
-                    <div className="glass rounded-2xl overflow-hidden divide-y divide-dark-700/50">
+                    <div className="divide-y divide-dark-700/50">
                       {txs.map((tx) => (
                         <TransactionItem
                           key={tx.id}
