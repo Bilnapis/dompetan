@@ -222,43 +222,44 @@ export function TransactionsPage() {
 
   useCategories();
 
-  // Group and filter transactions by date and search query
-  const groupedTransactions = useMemo(() => {
+  const searchedTransactions = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
-    const groups: Record<string, TransactionWithDetails[]> = {};
-    for (const tx of transactions) {
-      if (filterType !== "all" && tx.type !== filterType) continue;
+    if (!query) return transactions;
 
-      // Search filter: match note, category name, or account name
-      if (query) {
-        const note = (tx.note || "").toLowerCase();
-        const categoryName = (tx.category?.name || "").toLowerCase();
-        const accountName = (tx.account?.name || "").toLowerCase();
-        const amountStr = String(tx.amount);
-        if (
-          !note.includes(query) &&
-          !categoryName.includes(query) &&
-          !accountName.includes(query) &&
-          !amountStr.includes(query)
-        ) {
-          continue;
-        }
-      }
+    return transactions.filter((tx) => {
+      const note = (tx.note || "").toLowerCase();
+      const categoryName = (tx.category?.name || "").toLowerCase();
+      const accountName = (tx.account?.name || "").toLowerCase();
+      const amountStr = String(tx.amount);
+
+      return (
+        note.includes(query) ||
+        categoryName.includes(query) ||
+        accountName.includes(query) ||
+        amountStr.includes(query)
+      );
+    });
+  }, [transactions, searchQuery]);
+
+  // Group transactions by date after search and type filters are applied
+  const groupedTransactions = useMemo(() => {
+    const groups: Record<string, TransactionWithDetails[]> = {};
+    for (const tx of searchedTransactions) {
+      if (filterType !== "all" && tx.type !== filterType) continue;
 
       const dateKey = tx.transaction_date;
       if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(tx);
     }
     return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
-  }, [transactions, filterType, searchQuery]);
+  }, [searchedTransactions, filterType]);
 
-  // Compute summary from the visible (filtered) transactions
+  // Compute summary from searched transactions so recap cards remain useful filters
   const filteredSummary = useMemo(() => {
-    const allFiltered = groupedTransactions.flatMap(([, txs]) => txs);
-    const totalIncome = allFiltered
+    const totalIncome = searchedTransactions
       .filter((t) => t.type === "income" && t.category_id !== null)
       .reduce((sum, t) => sum + Number(t.amount), 0);
-    const totalExpense = allFiltered
+    const totalExpense = searchedTransactions
       .filter((t) => t.type === "expense" && t.category_id !== null)
       .reduce((sum, t) => sum + Number(t.amount), 0);
     return {
@@ -266,17 +267,11 @@ export function TransactionsPage() {
       totalExpense,
       balance: totalIncome - totalExpense,
     };
-  }, [groupedTransactions]);
+  }, [searchedTransactions]);
 
   const handleEdit = (tx: TransactionWithDetails) => {
     navigate("/transaction/form", { state: { editData: tx } });
   };
-
-  const filters: { value: FilterType; label: string }[] = [
-    { value: "all", label: "Semua" },
-    { value: "income", label: "Pemasukan" },
-    { value: "expense", label: "Pengeluaran" },
-  ];
 
   // ── Monthly tab: build list of cycle-months in the selected year ──
   const startDay = settings?.month_start_date || 1;
@@ -292,14 +287,18 @@ export function TransactionsPage() {
     for (let m = 12; m >= 1; m--) {
       const monthKey = `${year}-${String(m).padStart(2, "0")}`;
       const cycle = getCycleDateRange(year, m - 1, startDay, weekendBehavior);
-      // Skip future months (cycle hasn't started yet)
-      if (cycle.start > today) continue;
-
       const summary = computeRangeSummary(
         yearTransactions,
         cycle.start,
         cycle.end,
       );
+      const hasTransactions = yearTransactions.some(
+        (t) => t.transaction_date >= cycle.start && t.transaction_date <= cycle.end,
+      );
+
+      // Skip future months only when there is no transaction data in that cycle.
+      if (cycle.start > today && !hasTransactions) continue;
+
       rows.push({ monthKey, month: m, year, cycle, summary });
     }
     return rows;
@@ -610,46 +609,58 @@ export function TransactionsPage() {
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-3 gap-2 mb-5">
-            <div className="glass rounded-xl p-3 text-center">
+            <button
+              type="button"
+              onClick={() =>
+                setFilterType(filterType === "income" ? "all" : "income")
+              }
+              aria-pressed={filterType === "income"}
+              className={`
+                glass rounded-xl p-3 text-center transition-all duration-200
+                ${
+                  filterType === "income"
+                    ? "bg-income/25 ring-2 ring-income shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_0_28px_rgba(34,197,94,0.28)]"
+                    : "hover:bg-dark-800/60"
+                }
+              `}
+            >
               <p className="text-[10px] text-dark-400 mb-1">Pemasukan</p>
               <p className="text-sm font-bold text-income">
                 {formatCurrency(filteredSummary.totalIncome)}
               </p>
-            </div>
-            <div className="glass rounded-xl p-3 text-center">
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setFilterType(filterType === "expense" ? "all" : "expense")
+              }
+              aria-pressed={filterType === "expense"}
+              className={`
+                glass rounded-xl p-3 text-center transition-all duration-200
+                ${
+                  filterType === "expense"
+                    ? "bg-expense/25 ring-2 ring-expense shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_0_28px_rgba(239,68,68,0.28)]"
+                    : "hover:bg-dark-800/60"
+                }
+              `}
+            >
               <p className="text-[10px] text-dark-400 mb-1">Pengeluaran</p>
               <p className="text-sm font-bold text-expense">
                 {formatCurrency(filteredSummary.totalExpense)}
               </p>
-            </div>
-            <div className="glass rounded-xl p-3 text-center">
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType("all")}
+              className="glass rounded-xl p-3 text-center transition-all duration-200 hover:bg-dark-800/60"
+            >
               <p className="text-[10px] text-dark-400 mb-1">Selisih</p>
               <p
                 className={`text-sm font-bold ${filteredSummary.balance >= 0 ? "text-primary-400" : "text-expense"}`}
               >
                 {formatCurrency(filteredSummary.balance)}
               </p>
-            </div>
-          </div>
-
-          {/* Type Filter Tabs */}
-          <div className="flex rounded-xl overflow-hidden border border-dark-700 mb-5">
-            {filters.map((f) => (
-              <button
-                key={f.value}
-                onClick={() => setFilterType(f.value)}
-                className={`
-                  flex-1 py-2 text-xs font-medium transition-all duration-200
-                  ${
-                    filterType === f.value
-                      ? "bg-primary-500/15 text-primary-400 border-b-2 border-primary-400"
-                      : "bg-dark-800/50 text-dark-400 hover:text-dark-200"
-                  }
-                `}
-              >
-                {f.label}
-              </button>
-            ))}
+            </button>
           </div>
 
           {/* Search Bar */}
