@@ -221,7 +221,7 @@ export function TransactionFormPage() {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Misal: Makan siang..."
-            autoFocus
+            autoFocus={!editData}
           />
 
           <Input
@@ -378,4 +378,3 @@ export function TransactionFormPage() {
     </div>
   );
 }
-
