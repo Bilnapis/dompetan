@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from "react";
-import { Plus, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { useTransactions } from "../hooks/useTransactions";
 import { useNavigate } from "react-router-dom";
 import { TransactionItem } from "../components/TransactionItem";
@@ -366,22 +366,6 @@ export function TransactionsPage() {
         </>
       )}
 
-      {/* FAB */}
-      <button
-        onClick={() => navigate('/transaction/form')}
-        className="
-          fixed bottom-24 right-6 z-30
-          w-14 h-14 rounded-2xl
-          bg-gradient-to-br from-primary-400 to-primary-600
-          text-white shadow-lg shadow-primary-500/30
-          flex items-center justify-center
-          hover:shadow-xl hover:shadow-primary-500/40
-          active:scale-95
-          transition-all duration-200
-        "
-      >
-        <Plus className="w-6 h-6" />
-      </button>
 
     </div>
   );

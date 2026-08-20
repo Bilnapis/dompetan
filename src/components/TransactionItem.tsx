@@ -7,10 +7,7 @@ interface TransactionItemProps {
   onEdit: (transaction: TransactionWithDetails) => void;
 }
 
-export function TransactionItem({
-  transaction,
-  onEdit,
-}: TransactionItemProps) {
+export function TransactionItem({ transaction, onEdit }: TransactionItemProps) {
   const isIncome = transaction.type === "income";
   const isTransfer = transaction.category_id === null;
 
@@ -29,7 +26,9 @@ export function TransactionItem({
         {isTransfer ? (
           <ArrowRightLeft className="w-5 h-5 text-primary-400" />
         ) : transaction.category?.icon ? (
-          <span className="text-xl leading-none">{transaction.category.icon}</span>
+          <span className="text-xl leading-none">
+            {transaction.category.icon}
+          </span>
         ) : isIncome ? (
           <TrendingUp className="w-5 h-5 text-income" />
         ) : (
@@ -40,7 +39,9 @@ export function TransactionItem({
       {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-dark-100 truncate">
-          {transaction.note || transaction.category?.name || (isTransfer ? "Transfer" : "Tanpa Kategori")}
+          {transaction.note ||
+            transaction.category?.name ||
+            (isTransfer ? "Transfer" : "Tanpa Kategori")}
         </p>
         <div className="flex items-center gap-1.5 text-[11px] text-dark-400 mt-0.5 truncate">
           {transaction.account && (
@@ -51,9 +52,12 @@ export function TransactionItem({
           )}
           {transaction.note && (
             <>
-              {transaction.account && <span className="text-dark-600 text-[8px]">●</span>}
+              {transaction.account && (
+                <span className="text-dark-600 text-[8px]">●</span>
+              )}
               <span className="truncate">
-                {transaction.category?.name || (isTransfer ? "Transfer" : "Tanpa Kategori")}
+                {transaction.category?.name ||
+                  (isTransfer ? "Transfer" : "Tanpa Kategori")}
               </span>
             </>
           )}
