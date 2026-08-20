@@ -14,6 +14,7 @@ import {
 } from "../lib/helpers";
 import { useSettings } from "../contexts/SettingsContext";
 import { TransactionListSkeleton } from "../components/ui/Skeleton";
+import { CalendarView } from "../components/CalendarView";
 import type { TransactionWithDetails, CategoryType } from "../types/database";
 
 type FilterType = "all" | CategoryType;
@@ -211,8 +212,21 @@ export function TransactionsPage() {
         ))}
       </div>
 
-      <>
-        {/* Summary Cards */}
+      {/* ── CALENDAR TAB ── */}
+      {activeTab === "Calendar" && (
+        <div className="mb-6">
+          <CalendarView
+            transactions={transactions}
+            dateRange={dateRange}
+            onEditTransaction={handleEdit}
+          />
+        </div>
+      )}
+
+      {/* ── DAILY TAB (default) ── */}
+      {activeTab !== "Calendar" && (
+        <>
+          {/* Summary Cards */}
           <div className="grid grid-cols-3 gap-2 mb-5">
             <div className="glass rounded-xl p-3 text-center">
               <p className="text-[10px] text-dark-400 mb-1">Pemasukan</p>
@@ -349,7 +363,8 @@ export function TransactionsPage() {
               })}
             </div>
           )}
-      </>
+        </>
+      )}
 
       {/* FAB */}
       <button
