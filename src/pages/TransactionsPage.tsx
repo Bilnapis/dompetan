@@ -16,17 +16,25 @@ import {
 import { useSettings } from "../contexts/SettingsContext";
 import { TransactionListSkeleton } from "../components/ui/Skeleton";
 import { CalendarView } from "../components/CalendarView";
-import type { TransactionWithDetails, CategoryType, WeekendBehavior } from "../types/database";
+import type {
+  TransactionWithDetails,
+  CategoryType,
+  WeekendBehavior,
+} from "../types/database";
 
 type FilterType = "all" | CategoryType;
+type CycleWeek = {
+  start: string;
+  end: string;
+};
 
 // ── Helper: generate full Sun–Sat calendar weeks that overlap the cycle range ──
 function getCycleWeeks(
   year: number,
   month: number, // 0-indexed
   startDay: number,
-  weekendBehavior: WeekendBehavior
-): Array<{ start: string; end: string }> {
+  weekendBehavior: WeekendBehavior,
+): CycleWeek[] {
   const cycleRange = getCycleDateRange(year, month, startDay, weekendBehavior);
   const cycleStart = new Date(cycleRange.start);
   const cycleEnd = new Date(cycleRange.end);
@@ -35,14 +43,13 @@ function getCycleWeeks(
   const firstSunday = new Date(cycleStart);
   firstSunday.setDate(firstSunday.getDate() - firstSunday.getDay()); // go back to Sunday
 
-  const weeks: Array<{ start: string; end: string }> = [];
+  const weeks: CycleWeek[] = [];
   let weekStart = new Date(firstSunday);
 
   while (weekStart <= cycleEnd) {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6); // Saturday
 
-    // Use natural full Sun–Sat boundaries (no clamping to cycle dates)
     weeks.push({
       start: toDateInputValue(weekStart),
       end: toDateInputValue(weekEnd),
@@ -59,10 +66,10 @@ function getCycleWeeks(
 function computeRangeSummary(
   transactions: TransactionWithDetails[],
   start: string,
-  end: string
+  end: string,
 ) {
   const filtered = transactions.filter(
-    (t) => t.transaction_date >= start && t.transaction_date <= end
+    (t) => t.transaction_date >= start && t.transaction_date <= end,
   );
   const income = filtered
     .filter((t) => t.type === "income" && t.category_id !== null)
@@ -74,7 +81,20 @@ function computeRangeSummary(
 }
 
 // ── Helper: short month name (e.g. "Agu") ──
-const SHORT_MONTHS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+const SHORT_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mei",
+  "Jun",
+  "Jul",
+  "Agu",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Des",
+];
 
 export function TransactionsPage() {
   const { settings, loading: settingsLoading } = useSettings();
@@ -93,7 +113,7 @@ export function TransactionsPage() {
     if (settingsLoading) return null;
     return getCurrentCycleMonth(
       settings?.month_start_date || 1,
-      settings?.weekend_behavior || "none"
+      settings?.weekend_behavior || "none",
     );
   }, [filterMonth, settingsLoading, settings]);
 
@@ -123,6 +143,24 @@ export function TransactionsPage() {
     setFilterMonth(`${newYear}-${String(newMonth).padStart(2, "0")}`);
   };
 
+  const handlePrevYear = () => {
+    const base = filterMonth ?? resolvedFilterMonth;
+    if (!base) return;
+    const [year, month] = base.split("-").map(Number);
+    setFilterMonth(`${year - 1}-${String(month).padStart(2, "0")}`);
+  };
+
+  const handleNextYear = () => {
+    const base = filterMonth ?? resolvedFilterMonth;
+    if (!base) return;
+    const [year, month] = base.split("-").map(Number);
+    setFilterMonth(`${year + 1}-${String(month).padStart(2, "0")}`);
+  };
+
+  const currentYear = resolvedFilterMonth
+    ? parseInt(resolvedFilterMonth.split("-")[0], 10)
+    : new Date().getFullYear();
+
   // Calculate date range from month filter and user settings
   const dateRange = useMemo(() => {
     if (!resolvedFilterMonth) return null;
@@ -135,27 +173,46 @@ export function TransactionsPage() {
     );
   }, [resolvedFilterMonth, settings]);
 
-  const {
-    transactions,
-    loading,
-  } = useTransactions(dateRange ? {
-    type: "all",
-    startDate: dateRange.start,
-    endDate: dateRange.end,
-  } : undefined);
+  const { transactions, loading } = useTransactions(
+    dateRange
+      ? {
+          type: "all",
+          startDate: dateRange.start,
+          endDate: dateRange.end,
+        }
+      : undefined,
+  );
 
   // ── For Monthly tab: fetch full year data ──
+  // Harus mencakup dari awal cycle Januari s/d akhir cycle Desember tahun ini,
+  // karena cycle Desember bisa berakhir di bulan Januari tahun berikutnya.
   const yearDateRange = useMemo(() => {
-    if (!resolvedFilterMonth) return null;
+    if (!resolvedFilterMonth || !settings) return null;
     const year = parseInt(resolvedFilterMonth.split("-")[0], 10);
-    return { start: `${year}-01-01`, end: `${year}-12-31` };
-  }, [resolvedFilterMonth]);
+    const sd = settings.month_start_date || 1;
+    const wb = settings.weekend_behavior || "none";
+    const janCycle = getCycleDateRange(year, 0, sd, wb); // Jan (0-indexed)
+    const decCycle = getCycleDateRange(year, 11, sd, wb); // Dec (0-indexed)
 
-  const { transactions: yearTransactions, loading: yearLoading } = useTransactions(
-    activeTab === "Monthly" && yearDateRange
-      ? { type: "all", startDate: yearDateRange.start, endDate: yearDateRange.end }
-      : undefined
-  );
+    const start = new Date(janCycle.start);
+    start.setDate(start.getDate() - start.getDay()); // Go back to Sunday
+
+    const end = new Date(decCycle.end);
+    end.setDate(end.getDate() + (6 - end.getDay())); // Go forward to Saturday
+
+    return { start: toDateInputValue(start), end: toDateInputValue(end) };
+  }, [resolvedFilterMonth, settings]);
+
+  const { transactions: yearTransactions, loading: yearLoading } =
+    useTransactions(
+      activeTab === "Monthly" && yearDateRange
+        ? {
+            type: "all",
+            startDate: yearDateRange.start,
+            endDate: yearDateRange.end,
+          }
+        : undefined,
+    );
 
   useCategories();
 
@@ -206,7 +263,7 @@ export function TransactionsPage() {
   }, [groupedTransactions]);
 
   const handleEdit = (tx: TransactionWithDetails) => {
-    navigate('/transaction/form', { state: { editData: tx } });
+    navigate("/transaction/form", { state: { editData: tx } });
   };
 
   const filters: { value: FilterType; label: string }[] = [
@@ -232,26 +289,28 @@ export function TransactionsPage() {
       // Skip future months (cycle hasn't started yet)
       if (cycle.start > today) continue;
 
-      const summary = computeRangeSummary(yearTransactions, cycle.start, cycle.end);
+      const summary = computeRangeSummary(
+        yearTransactions,
+        cycle.start,
+        cycle.end,
+      );
       rows.push({ monthKey, month: m, year, cycle, summary });
     }
     return rows;
   }, [resolvedFilterMonth, yearTransactions, startDay, weekendBehavior]);
 
   const yearlySummary = useMemo(() => {
-    if (!yearDateRange) return { income: 0, expense: 0, balance: 0 };
-    return computeRangeSummary(yearTransactions, yearDateRange.start, yearDateRange.end);
-  }, [yearTransactions, yearDateRange]);
+    return monthlyRows.reduce(
+      (summary, row) => ({
+        income: summary.income + row.summary.income,
+        expense: summary.expense + row.summary.expense,
+        balance: summary.balance + row.summary.balance,
+      }),
+      { income: 0, expense: 0, balance: 0 },
+    );
+  }, [monthlyRows]);
 
-  // Determine the current active cycle-week for highlighting
   const todayStr = toDateInputValue(new Date());
-  const currentWeekInfo = useMemo(() => {
-    if (!resolvedFilterMonth) return null;
-    const year = parseInt(resolvedFilterMonth.split("-")[0], 10);
-    const month = parseInt(resolvedFilterMonth.split("-")[1], 10);
-    const weeks = getCycleWeeks(year, month - 1, startDay, weekendBehavior);
-    return weeks.find((w) => todayStr >= w.start && todayStr <= w.end) || null;
-  }, [resolvedFilterMonth, startDay, weekendBehavior, todayStr]);
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-6">
@@ -259,44 +318,68 @@ export function TransactionsPage() {
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-bold text-dark-100">Transaksi</h1>
         <div className="flex items-center gap-1">
-          <button
-            onClick={handlePrevMonth}
-            className="p-1 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <input
-            type="month"
-            value={resolvedFilterMonth || ""}
-            onChange={(e) => setFilterMonth(e.target.value)}
-            onClick={(e) => {
-              try {
-                if ("showPicker" in HTMLInputElement.prototype) {
-                  e.currentTarget.showPicker();
-                }
-              } catch (err) {
-                // Ignore if not supported
-              }
-            }}
-            className="
-              w-32 bg-dark-800 border border-dark-700 rounded-lg
-              px-2 py-1.5 text-xs text-dark-200 text-center
-              focus:outline-none focus:ring-1 focus:ring-primary-500
-              [&::-webkit-calendar-picker-indicator]:hidden
-              [&::-webkit-datetime-edit]:flex [&::-webkit-datetime-edit]:justify-center
-            "
-          />
-          <button
-            onClick={handleNextMonth}
-            className="p-1 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          {activeTab === "Monthly" ? (
+            /* Year-only navigator for Monthly tab */
+            <>
+              <button
+                onClick={handlePrevYear}
+                className="p-1 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <span className="w-16 text-center text-xs font-semibold text-dark-200 bg-dark-800 border border-dark-700 rounded-lg px-2 py-1.5">
+                {currentYear}
+              </span>
+              <button
+                onClick={handleNextYear}
+                className="p-1 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          ) : (
+            /* Month navigator for other tabs */
+            <>
+              <button
+                onClick={handlePrevMonth}
+                className="p-1 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <input
+                type="month"
+                value={resolvedFilterMonth || ""}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                onClick={(e) => {
+                  try {
+                    if ("showPicker" in HTMLInputElement.prototype) {
+                      e.currentTarget.showPicker();
+                    }
+                  } catch (err) {
+                    // Ignore if not supported
+                  }
+                }}
+                className="
+                  period-picker w-32 bg-dark-800 border border-dark-700 rounded-lg
+                  px-2 py-1.5 text-xs text-dark-200 text-center
+                  focus:outline-none focus:ring-1 focus:ring-primary-500
+                  [&::-webkit-calendar-picker-indicator]:hidden
+                  [&::-webkit-datetime-edit]:flex [&::-webkit-datetime-edit]:justify-center
+                "
+              />
+              <button
+                onClick={handleNextMonth}
+                className="p-1 text-dark-400 hover:text-primary-400 hover:bg-dark-800 rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Indicator of actual date range */}
-      {(settings?.month_start_date ?? 1) > 1 && dateRange && (
+      {activeTab !== "Monthly" && (settings?.month_start_date ?? 1) > 1 && dateRange && (
         <div className="text-[10px] text-dark-400 text-right -mt-4 mb-4 pr-1">
           Rentang: {formatDateShort(dateRange.start)} -{" "}
           {formatDateShort(dateRange.end)}
@@ -352,9 +435,13 @@ export function TransactionsPage() {
             </div>
             <div className="glass rounded-xl p-3 text-center">
               <p className="text-[10px] text-dark-400 mb-1">Selisih</p>
-              <p className={`text-sm font-bold ${
-                yearlySummary.balance >= 0 ? "text-primary-400" : "text-expense"
-              }`}>
+              <p
+                className={`text-sm font-bold ${
+                  yearlySummary.balance >= 0
+                    ? "text-primary-400"
+                    : "text-expense"
+                }`}
+              >
                 {formatCurrency(yearlySummary.balance)}
               </p>
             </div>
@@ -366,28 +453,34 @@ export function TransactionsPage() {
             <div className="divide-y divide-dark-700/40">
               {monthlyRows.map(({ monthKey, month, year, cycle, summary }) => {
                 const isExpanded = expandedMonth === monthKey;
-                const isCurrentCycle = cycle.start <= todayStr && todayStr <= cycle.end;
+                const isCurrentCycle =
+                  cycle.start <= todayStr && todayStr <= cycle.end;
                 const weeks = isExpanded
                   ? getCycleWeeks(year, month - 1, startDay, weekendBehavior)
                   : [];
 
-                const cycleLabel = startDay > 1
-                  ? `${formatDateShort(cycle.start)} ~ ${formatDateShort(cycle.end)}`
-                  : null;
+                const cycleLabel =
+                  startDay > 1
+                    ? `${formatDateShort(cycle.start)} ~ ${formatDateShort(cycle.end)}`
+                    : null;
 
                 return (
                   <div key={monthKey}>
                     {/* Month Row */}
                     <button
                       className="w-full text-left py-3 px-1 flex items-center justify-between"
-                      onClick={() => setExpandedMonth(isExpanded ? null : monthKey)}
+                      onClick={() =>
+                        setExpandedMonth(isExpanded ? null : monthKey)
+                      }
                     >
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-dark-100">
                           {SHORT_MONTHS[month - 1]}
                         </p>
                         {cycleLabel && (
-                          <p className="text-[10px] text-dark-500 mt-0.5">{cycleLabel}</p>
+                          <p className="text-[10px] text-dark-500 mt-0.5">
+                            {cycleLabel}
+                          </p>
                         )}
                       </div>
                       <div className="flex items-end gap-4">
@@ -407,9 +500,13 @@ export function TransactionsPage() {
                           )}
                         </div>
                         <div className="text-right min-w-[80px]">
-                          <p className={`text-xs font-semibold ${
-                            summary.balance >= 0 ? "text-dark-200" : "text-expense"
-                          }`}>
+                          <p
+                            className={`text-xs font-semibold ${
+                              summary.balance >= 0
+                                ? "text-dark-200"
+                                : "text-expense"
+                            }`}
+                          >
                             {formatCurrency(summary.balance)}
                           </p>
                           {isCurrentCycle && (
@@ -430,11 +527,10 @@ export function TransactionsPage() {
                           const wSummary = computeRangeSummary(
                             yearTransactions,
                             week.start,
-                            week.end
+                            week.end,
                           );
                           const isCurrentWeek =
-                            currentWeekInfo?.start === week.start &&
-                            currentWeekInfo?.end === week.end;
+                            todayStr >= week.start && todayStr <= week.end;
 
                           const startParts = week.start.split("-");
                           const endParts = week.end.split("-");
@@ -449,9 +545,11 @@ export function TransactionsPage() {
                                   : "bg-dark-800/30"
                               }`}
                             >
-                              <p className="text-xs text-dark-400 flex-1">{weekLabel}</p>
+                              <p className="text-xs text-dark-400 flex-1">
+                                {weekLabel}
+                              </p>
                               <div className="flex items-end gap-4">
-                                <div className="text-right">
+                                <div className="text-right min-w-[88px]">
                                   {wSummary.income > 0 && (
                                     <p className="text-xs text-income">
                                       {formatCurrency(wSummary.income)}
@@ -462,19 +560,29 @@ export function TransactionsPage() {
                                       {formatCurrency(wSummary.expense)}
                                     </p>
                                   )}
-                                  {wSummary.income === 0 && wSummary.expense === 0 && (
-                                    <p className="text-xs text-dark-600">Rp 0</p>
-                                  )}
+                                  {wSummary.income === 0 &&
+                                    wSummary.expense === 0 && (
+                                      <p className="text-xs text-dark-600">
+                                        Rp 0
+                                      </p>
+                                    )}
                                 </div>
                                 <div className="text-right min-w-[80px]">
-                                  <p className={`text-xs font-medium ${
-                                    isCurrentWeek ? "text-dark-100" :
-                                    wSummary.balance >= 0 ? "text-dark-300" : "text-expense"
-                                  }`}>
+                                  <p
+                                    className={`text-xs font-medium ${
+                                      isCurrentWeek
+                                        ? "text-dark-100"
+                                        : wSummary.balance >= 0
+                                          ? "text-dark-300"
+                                          : "text-expense"
+                                    }`}
+                                  >
                                     {formatCurrency(wSummary.balance)}
                                   </p>
                                   {isCurrentWeek && (
-                                    <p className="text-[10px] text-dark-500">Total Rp 0</p>
+                                    <p className="text-[10px] text-dark-500">
+                                      Total Rp 0
+                                    </p>
                                   )}
                                 </div>
                               </div>
@@ -585,7 +693,7 @@ export function TransactionsPage() {
                 title="Belum ada transaksi"
                 description="Transaksi yang kamu buat akan muncul di sini"
                 actionLabel="Tambah Transaksi"
-                onAction={() => navigate('/transaction/form')}
+                onAction={() => navigate("/transaction/form")}
               />
             )
           ) : (
@@ -633,8 +741,6 @@ export function TransactionsPage() {
           )}
         </>
       )}
-
-
     </div>
   );
 }

@@ -157,6 +157,25 @@
   animation: slide-up-sheet 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.period-picker {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: none;
+}
+
+.period-picker::-webkit-calendar-picker-indicator,
+.period-picker::-webkit-inner-spin-button,
+.period-picker::-webkit-clear-button {
+  display: none;
+  opacity: 0;
+  -webkit-appearance: none;
+}
+
+.period-picker::-webkit-datetime-edit {
+  display: flex;
+  justify-content: center;
+}
+
 .delay-75 { animation-delay: 75ms; }
 .delay-150 { animation-delay: 150ms; }
 .delay-200 { animation-delay: 200ms; }

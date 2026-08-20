@@ -9,8 +9,14 @@ interface UseTransactionsOptions {
   endDate?: string
 }
 
+const TRANSACTIONS_PAGE_SIZE = 1000
+
 export function useTransactions(options?: UseTransactionsOptions) {
   const { user } = useAuth()
+  const hasOptions = options !== undefined
+  const optionType = options?.type
+  const optionStartDate = options?.startDate
+  const optionEndDate = options?.endDate
   const [transactions, setTransactions] = useState<TransactionWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -19,7 +25,7 @@ export function useTransactions(options?: UseTransactionsOptions) {
     if (!user) return
 
     // Skip fetch if no options provided (waiting for settings to load)
-    if (!options) {
+    if (!hasOptions) {
       setLoading(true)
       return
     }
@@ -28,37 +34,52 @@ export function useTransactions(options?: UseTransactionsOptions) {
     setError(null)
 
     try {
-      let query = supabase
-        .from('transactions')
-        .select('*, category:categories(*), account:accounts(*)')
-        .eq('user_id', user.id)
-        .order('transaction_date', { ascending: false })
-        .order('created_at', { ascending: false })
+      const allTransactions: TransactionWithDetails[] = []
+      let page = 0
+      let hasMore = true
 
-      // Apply type filter
-      if (options?.type && options.type !== 'all') {
-        query = query.eq('type', options.type)
+      while (hasMore) {
+        const from = page * TRANSACTIONS_PAGE_SIZE
+        const to = from + TRANSACTIONS_PAGE_SIZE - 1
+
+        let query = supabase
+          .from('transactions')
+          .select('*, category:categories(*), account:accounts(*)')
+          .eq('user_id', user.id)
+          .order('transaction_date', { ascending: false })
+          .order('created_at', { ascending: false })
+          .range(from, to)
+
+        // Apply type filter
+        if (optionType && optionType !== 'all') {
+          query = query.eq('type', optionType)
+        }
+
+        // Apply date range filter
+        if (optionStartDate) {
+          query = query.gte('transaction_date', optionStartDate)
+        }
+        if (optionEndDate) {
+          query = query.lte('transaction_date', optionEndDate)
+        }
+
+        const { data, error: fetchError } = await query
+
+        if (fetchError) throw fetchError
+
+        const pageTransactions = (data as unknown as TransactionWithDetails[]) || []
+        allTransactions.push(...pageTransactions)
+        hasMore = pageTransactions.length === TRANSACTIONS_PAGE_SIZE
+        page += 1
       }
 
-      // Apply date range filter
-      if (options?.startDate) {
-        query = query.gte('transaction_date', options.startDate)
-      }
-      if (options?.endDate) {
-        query = query.lte('transaction_date', options.endDate)
-      }
-
-      const { data, error: fetchError } = await query
-
-      if (fetchError) throw fetchError
-
-      setTransactions((data as unknown as TransactionWithDetails[]) || [])
+      setTransactions(allTransactions)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memuat transaksi')
     } finally {
       setLoading(false)
     }
-  }, [user, options?.type, options?.startDate, options?.endDate])
+  }, [user, hasOptions, optionType, optionStartDate, optionEndDate])
 
   useEffect(() => {
     fetchTransactions()

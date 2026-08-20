@@ -99,8 +99,13 @@ function adjustForWeekend(date: Date, behavior: WeekendBehavior): Date {
 
 /**
  * Mendapatkan rentang tanggal untuk suatu siklus bulan.
- * Jika bulan filter adalah Agustus 2026 dan tanggal mulai adalah 25,
- * maka siklus = 25 Juli 2026 s/d 24 Agustus 2026.
+ * Konvensi: siklus "bulan X" dimulai pada tanggal startDay bulan X
+ * dan berakhir satu hari sebelum startDay bulan X+1.
+ *
+ * Contoh: startDay = 15, bulan = November
+ *   → siklus = 15 November s/d 14 Desember (labeled "November")
+ *
+ * Jika startDay = 1 → siklus = 1 Nov s/d 30 Nov (kalender biasa)
  */
 export function getCycleDateRange(
   targetYear: number,
@@ -108,7 +113,7 @@ export function getCycleDateRange(
   startDay: number,
   weekendBehavior: WeekendBehavior
 ): { start: string; end: string } {
-  // Jika startDay = 1, siklus = 1 Agustus s/d 31 Agustus
+  // Jika startDay = 1, siklus kalender biasa
   if (startDay === 1) {
     const start = new Date(targetYear, targetMonth, 1)
     const end = new Date(targetYear, targetMonth + 1, 0)
@@ -118,24 +123,21 @@ export function getCycleDateRange(
     }
   }
 
-  // Jika startDay > 1, siklus dimulai pada bulan SEBELUMNYA
-  // Start date = (targetMonth - 1) tanggal startDay
-  let rawStartDate = new Date(targetYear, targetMonth - 1, startDay)
-  
-  // Tangani kasus di mana bulan sebelumnya tidak memiliki tanggal startDay (misal: 31 Feb)
-  if (rawStartDate.getMonth() !== (targetMonth - 1 + 12) % 12) {
-    rawStartDate = new Date(targetYear, targetMonth, 0) // Hari terakhir bulan sebelumnya
+  // Start date = targetMonth tanggal startDay
+  let rawStartDate = new Date(targetYear, targetMonth, startDay)
+  // Tangani kasus bulan tidak memiliki tanggal startDay (misal Feb tidak punya tgl 31)
+  if (rawStartDate.getMonth() !== targetMonth) {
+    rawStartDate = new Date(targetYear, targetMonth + 1, 0) // Hari terakhir targetMonth
   }
   const startDate = adjustForWeekend(rawStartDate, weekendBehavior)
 
-  // End date = targetMonth tanggal (startDay - 1)
-  // Tetapi harus menghitung rawNextStartDate dulu lalu dikurangi 1 hari
-  let rawNextStartDate = new Date(targetYear, targetMonth, startDay)
-  if (rawNextStartDate.getMonth() !== targetMonth) {
-    rawNextStartDate = new Date(targetYear, targetMonth + 1, 0)
+  // End date = satu hari sebelum startDay bulan berikutnya
+  let rawNextStartDate = new Date(targetYear, targetMonth + 1, startDay)
+  if (rawNextStartDate.getMonth() !== (targetMonth + 1) % 12) {
+    rawNextStartDate = new Date(targetYear, targetMonth + 2, 0)
   }
   const nextStartDate = adjustForWeekend(rawNextStartDate, weekendBehavior)
-  
+
   const endDate = new Date(nextStartDate)
   endDate.setDate(endDate.getDate() - 1)
 
@@ -147,6 +149,10 @@ export function getCycleDateRange(
 
 /**
  * Get current cycle range (for Dashboard)
+ *
+ * Konvensi baru: siklus "bulan X" = startDay bulan X s/d (startDay-1) bulan X+1.
+ * Jika hari ini sudah >= startDay bulan ini → siklus bulan ini.
+ * Jika hari ini < startDay bulan ini → siklus bulan lalu.
  */
 export function getCurrentCycleRange(
   startDay: number = 1,
@@ -156,10 +162,6 @@ export function getCurrentCycleRange(
   let targetMonth = now.getMonth()
   let targetYear = now.getFullYear()
 
-  // Jika hari ini belum melewati startDay, berarti masih ikut siklus bulan ini.
-  // Jika sudah melewati startDay, jika startDay != 1, itu dihitung sebagai siklus bulan depan.
-  // Misalnya: Tgl mulai = 25. Hari ini = 26 Agustus. Maka masuk ke siklus September (25 Ags - 24 Sep).
-  // Hari ini = 10 Agustus. Masuk siklus Agustus (25 Jul - 24 Ags).
   if (startDay > 1) {
     let rawThisCycleStart = new Date(targetYear, targetMonth, startDay)
     if (rawThisCycleStart.getMonth() !== targetMonth) {
@@ -167,14 +169,15 @@ export function getCurrentCycleRange(
     }
     const thisCycleStart = adjustForWeekend(rawThisCycleStart, weekendBehavior)
 
-    if (now >= thisCycleStart) {
-      // Masuk ke target bulan depan
-      targetMonth += 1
-      if (targetMonth > 11) {
-        targetMonth = 0
-        targetYear += 1
+    // Jika hari ini belum mencapai startDay bulan ini → masih di siklus bulan lalu
+    if (now < thisCycleStart) {
+      targetMonth -= 1
+      if (targetMonth < 0) {
+        targetMonth = 11
+        targetYear -= 1
       }
     }
+    // Jika now >= thisCycleStart → tetap di bulan ini (siklus bulan ini sudah berjalan)
   }
 
   return getCycleDateRange(targetYear, targetMonth, startDay, weekendBehavior)
@@ -199,11 +202,12 @@ export function getCurrentCycleMonth(
     }
     const thisCycleStart = adjustForWeekend(rawThisCycleStart, weekendBehavior)
 
-    if (now >= thisCycleStart) {
-      targetMonth += 1
-      if (targetMonth > 11) {
-        targetMonth = 0
-        targetYear += 1
+    // Jika hari ini belum mencapai startDay bulan ini → masih di siklus bulan lalu
+    if (now < thisCycleStart) {
+      targetMonth -= 1
+      if (targetMonth < 0) {
+        targetMonth = 11
+        targetYear -= 1
       }
     }
   }
