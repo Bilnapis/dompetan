@@ -11,13 +11,70 @@ import {
   getCurrentCycleMonth,
   formatDateShort,
   formatCurrency,
+  toDateInputValue,
 } from "../lib/helpers";
 import { useSettings } from "../contexts/SettingsContext";
 import { TransactionListSkeleton } from "../components/ui/Skeleton";
 import { CalendarView } from "../components/CalendarView";
-import type { TransactionWithDetails, CategoryType } from "../types/database";
+import type { TransactionWithDetails, CategoryType, WeekendBehavior } from "../types/database";
 
 type FilterType = "all" | CategoryType;
+
+// ── Helper: generate full Sun–Sat calendar weeks that overlap the cycle range ──
+function getCycleWeeks(
+  year: number,
+  month: number, // 0-indexed
+  startDay: number,
+  weekendBehavior: WeekendBehavior
+): Array<{ start: string; end: string }> {
+  const cycleRange = getCycleDateRange(year, month, startDay, weekendBehavior);
+  const cycleStart = new Date(cycleRange.start);
+  const cycleEnd = new Date(cycleRange.end);
+
+  // Find the Sunday of the week that contains cycleStart
+  const firstSunday = new Date(cycleStart);
+  firstSunday.setDate(firstSunday.getDate() - firstSunday.getDay()); // go back to Sunday
+
+  const weeks: Array<{ start: string; end: string }> = [];
+  let weekStart = new Date(firstSunday);
+
+  while (weekStart <= cycleEnd) {
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6); // Saturday
+
+    // Use natural full Sun–Sat boundaries (no clamping to cycle dates)
+    weeks.push({
+      start: toDateInputValue(weekStart),
+      end: toDateInputValue(weekEnd),
+    });
+
+    weekStart.setDate(weekStart.getDate() + 7);
+  }
+
+  // Return newest week first (descending)
+  return weeks.reverse();
+}
+
+// ── Helper: compute income/expense for a date range from transaction list ──
+function computeRangeSummary(
+  transactions: TransactionWithDetails[],
+  start: string,
+  end: string
+) {
+  const filtered = transactions.filter(
+    (t) => t.transaction_date >= start && t.transaction_date <= end
+  );
+  const income = filtered
+    .filter((t) => t.type === "income" && t.category_id !== null)
+    .reduce((s, t) => s + Number(t.amount), 0);
+  const expense = filtered
+    .filter((t) => t.type === "expense" && t.category_id !== null)
+    .reduce((s, t) => s + Number(t.amount), 0);
+  return { income, expense, balance: income - expense };
+}
+
+// ── Helper: short month name (e.g. "Agu") ──
+const SHORT_MONTHS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
 
 export function TransactionsPage() {
   const { settings, loading: settingsLoading } = useSettings();
@@ -27,6 +84,8 @@ export function TransactionsPage() {
   const [filterMonth, setFilterMonth] = useState<string | null>(null);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>("Daily");
+  // Monthly view: which month row is expanded (YYYY-MM)
+  const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
 
   // Initialize filterMonth once settings are loaded
   const resolvedFilterMonth = useMemo(() => {
@@ -85,6 +144,19 @@ export function TransactionsPage() {
     endDate: dateRange.end,
   } : undefined);
 
+  // ── For Monthly tab: fetch full year data ──
+  const yearDateRange = useMemo(() => {
+    if (!resolvedFilterMonth) return null;
+    const year = parseInt(resolvedFilterMonth.split("-")[0], 10);
+    return { start: `${year}-01-01`, end: `${year}-12-31` };
+  }, [resolvedFilterMonth]);
+
+  const { transactions: yearTransactions, loading: yearLoading } = useTransactions(
+    activeTab === "Monthly" && yearDateRange
+      ? { type: "all", startDate: yearDateRange.start, endDate: yearDateRange.end }
+      : undefined
+  );
+
   useCategories();
 
   // Group and filter transactions by date and search query
@@ -142,6 +214,44 @@ export function TransactionsPage() {
     { value: "income", label: "Pemasukan" },
     { value: "expense", label: "Pengeluaran" },
   ];
+
+  // ── Monthly tab: build list of cycle-months in the selected year ──
+  const startDay = settings?.month_start_date || 1;
+  const weekendBehavior = settings?.weekend_behavior || "none";
+
+  const monthlyRows = useMemo(() => {
+    if (!resolvedFilterMonth) return [];
+    const year = parseInt(resolvedFilterMonth.split("-")[0], 10);
+    const today = toDateInputValue(new Date());
+
+    const rows = [];
+    // Go from month 12 down to 1 (descending, newest first)
+    for (let m = 12; m >= 1; m--) {
+      const monthKey = `${year}-${String(m).padStart(2, "0")}`;
+      const cycle = getCycleDateRange(year, m - 1, startDay, weekendBehavior);
+      // Skip future months (cycle hasn't started yet)
+      if (cycle.start > today) continue;
+
+      const summary = computeRangeSummary(yearTransactions, cycle.start, cycle.end);
+      rows.push({ monthKey, month: m, year, cycle, summary });
+    }
+    return rows;
+  }, [resolvedFilterMonth, yearTransactions, startDay, weekendBehavior]);
+
+  const yearlySummary = useMemo(() => {
+    if (!yearDateRange) return { income: 0, expense: 0, balance: 0 };
+    return computeRangeSummary(yearTransactions, yearDateRange.start, yearDateRange.end);
+  }, [yearTransactions, yearDateRange]);
+
+  // Determine the current active cycle-week for highlighting
+  const todayStr = toDateInputValue(new Date());
+  const currentWeekInfo = useMemo(() => {
+    if (!resolvedFilterMonth) return null;
+    const year = parseInt(resolvedFilterMonth.split("-")[0], 10);
+    const month = parseInt(resolvedFilterMonth.split("-")[1], 10);
+    const weeks = getCycleWeeks(year, month - 1, startDay, weekendBehavior);
+    return weeks.find((w) => todayStr >= w.start && todayStr <= w.end) || null;
+  }, [resolvedFilterMonth, startDay, weekendBehavior, todayStr]);
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-6">
@@ -223,8 +333,166 @@ export function TransactionsPage() {
         </div>
       )}
 
+      {/* ── MONTHLY TAB ── */}
+      {activeTab === "Monthly" && (
+        <div className="mb-6 animate-fade-in">
+          {/* Yearly Summary Cards */}
+          <div className="grid grid-cols-3 gap-2 mb-5">
+            <div className="glass rounded-xl p-3 text-center">
+              <p className="text-[10px] text-dark-400 mb-1">Pemasukan</p>
+              <p className="text-sm font-bold text-income">
+                {formatCurrency(yearlySummary.income)}
+              </p>
+            </div>
+            <div className="glass rounded-xl p-3 text-center">
+              <p className="text-[10px] text-dark-400 mb-1">Pengeluaran</p>
+              <p className="text-sm font-bold text-expense">
+                {formatCurrency(yearlySummary.expense)}
+              </p>
+            </div>
+            <div className="glass rounded-xl p-3 text-center">
+              <p className="text-[10px] text-dark-400 mb-1">Selisih</p>
+              <p className={`text-sm font-bold ${
+                yearlySummary.balance >= 0 ? "text-primary-400" : "text-expense"
+              }`}>
+                {formatCurrency(yearlySummary.balance)}
+              </p>
+            </div>
+          </div>
+
+          {yearLoading ? (
+            <TransactionListSkeleton count={6} />
+          ) : (
+            <div className="divide-y divide-dark-700/40">
+              {monthlyRows.map(({ monthKey, month, year, cycle, summary }) => {
+                const isExpanded = expandedMonth === monthKey;
+                const isCurrentCycle = cycle.start <= todayStr && todayStr <= cycle.end;
+                const weeks = isExpanded
+                  ? getCycleWeeks(year, month - 1, startDay, weekendBehavior)
+                  : [];
+
+                const cycleLabel = startDay > 1
+                  ? `${formatDateShort(cycle.start)} ~ ${formatDateShort(cycle.end)}`
+                  : null;
+
+                return (
+                  <div key={monthKey}>
+                    {/* Month Row */}
+                    <button
+                      className="w-full text-left py-3 px-1 flex items-center justify-between"
+                      onClick={() => setExpandedMonth(isExpanded ? null : monthKey)}
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-dark-100">
+                          {SHORT_MONTHS[month - 1]}
+                        </p>
+                        {cycleLabel && (
+                          <p className="text-[10px] text-dark-500 mt-0.5">{cycleLabel}</p>
+                        )}
+                      </div>
+                      <div className="flex items-end gap-4">
+                        <div className="text-right">
+                          {summary.income > 0 && (
+                            <p className="text-xs font-medium text-income">
+                              {formatCurrency(summary.income)}
+                            </p>
+                          )}
+                          {summary.expense > 0 && (
+                            <p className="text-[10px] text-expense">
+                              {formatCurrency(summary.expense)}
+                            </p>
+                          )}
+                          {summary.income === 0 && summary.expense === 0 && (
+                            <p className="text-xs text-dark-500">Rp 0</p>
+                          )}
+                        </div>
+                        <div className="text-right min-w-[80px]">
+                          <p className={`text-xs font-semibold ${
+                            summary.balance >= 0 ? "text-dark-200" : "text-expense"
+                          }`}>
+                            {formatCurrency(summary.balance)}
+                          </p>
+                          {isCurrentCycle && (
+                            <p className="text-[10px] text-dark-500">
+                              {summary.balance >= 0
+                                ? `+${formatCurrency(summary.balance)}`
+                                : formatCurrency(summary.balance)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Weekly Sub-Rows (expanded) */}
+                    {isExpanded && weeks.length > 0 && (
+                      <div className="animate-fade-in">
+                        {weeks.map((week) => {
+                          const wSummary = computeRangeSummary(
+                            yearTransactions,
+                            week.start,
+                            week.end
+                          );
+                          const isCurrentWeek =
+                            currentWeekInfo?.start === week.start &&
+                            currentWeekInfo?.end === week.end;
+
+                          const startParts = week.start.split("-");
+                          const endParts = week.end.split("-");
+                          const weekLabel = `${startParts[1]}.${startParts[2]} ~ ${endParts[1]}.${endParts[2]}`;
+
+                          return (
+                            <div
+                              key={week.start}
+                              className={`flex items-center justify-between px-3 py-2.5 ${
+                                isCurrentWeek
+                                  ? "bg-red-900/40 border-l-2 border-red-600/60"
+                                  : "bg-dark-800/30"
+                              }`}
+                            >
+                              <p className="text-xs text-dark-400 flex-1">{weekLabel}</p>
+                              <div className="flex items-end gap-4">
+                                <div className="text-right">
+                                  {wSummary.income > 0 && (
+                                    <p className="text-xs text-income">
+                                      {formatCurrency(wSummary.income)}
+                                    </p>
+                                  )}
+                                  {wSummary.expense > 0 && (
+                                    <p className="text-[10px] text-expense">
+                                      {formatCurrency(wSummary.expense)}
+                                    </p>
+                                  )}
+                                  {wSummary.income === 0 && wSummary.expense === 0 && (
+                                    <p className="text-xs text-dark-600">Rp 0</p>
+                                  )}
+                                </div>
+                                <div className="text-right min-w-[80px]">
+                                  <p className={`text-xs font-medium ${
+                                    isCurrentWeek ? "text-dark-100" :
+                                    wSummary.balance >= 0 ? "text-dark-300" : "text-expense"
+                                  }`}>
+                                    {formatCurrency(wSummary.balance)}
+                                  </p>
+                                  {isCurrentWeek && (
+                                    <p className="text-[10px] text-dark-500">Total Rp 0</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── DAILY TAB (default) ── */}
-      {activeTab !== "Calendar" && (
+      {activeTab !== "Calendar" && activeTab !== "Monthly" && (
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-3 gap-2 mb-5">
