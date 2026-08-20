@@ -1,5 +1,12 @@
 import { useState, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  TrendingDown,
+  TrendingUp,
+  X,
+} from "lucide-react";
 import { useTransactions } from "../hooks/useTransactions";
 import { useNavigate } from "react-router-dom";
 import { TransactionItem } from "../components/TransactionItem";
@@ -383,14 +390,6 @@ export function TransactionsPage() {
         </div>
       </div>
 
-      {/* Indicator of actual date range */}
-      {activeTab !== "Monthly" && (settings?.month_start_date ?? 1) > 1 && dateRange && (
-        <div className="text-[10px] text-dark-400 text-right -mt-4 mb-4 pr-1">
-          Rentang: {formatDateShort(dateRange.start)} -{" "}
-          {formatDateShort(dateRange.end)}
-        </div>
-      )}
-
       {/* Top Navigation Tabs */}
       <div className="flex justify-between items-center border-b border-dark-700/50 mb-6 overflow-x-auto no-scrollbar">
         {["Daily", "Calendar", "Monthly", "Note"].map((tab) => (
@@ -729,28 +728,35 @@ export function TransactionsPage() {
 
                 return (
                   <div key={date} className="glass rounded-2xl overflow-hidden">
-                    <div className="flex items-center gap-3 px-4 py-3 border-b border-dark-700/50">
-                      <span className="text-4xl font-bold text-dark-100 leading-none w-12 shrink-0">
-                        {dayNum}
-                      </span>
+                    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-dark-700/50">
+                      <div className="w-14 h-14 rounded-2xl bg-primary-500/15 border border-primary-500/25 flex items-center justify-center shrink-0">
+                        <span className="text-3xl font-bold text-dark-100 leading-none">
+                          {dayNum}
+                        </span>
+                      </div>
 
                       <div className="flex flex-col gap-0.5">
-                        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-dark-700 text-[10px] font-semibold text-dark-300 w-fit">
+                        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-dark-800 text-[10px] font-semibold text-primary-300 w-fit">
                           {dayName}
                         </span>
-                        <span className="text-xs text-dark-500">{monthYear}</span>
+                        <span className="text-xs text-dark-400">{monthYear}</span>
+                        <span className="text-[10px] text-dark-500">
+                          {txs.length} transaksi
+                        </span>
                       </div>
 
                       <div className="flex-1" />
 
-                      <div className="flex items-center gap-3 text-sm font-semibold">
+                      <div className="flex flex-col items-end gap-1">
                         {dailyIncome > 0 && (
-                          <span className="text-income">
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-income/10 px-2 py-1 text-xs font-semibold text-income">
+                            <TrendingUp className="h-3 w-3" />
                             +{formatCurrency(dailyIncome)}
                           </span>
                         )}
                         {dailyExpense > 0 && (
-                          <span className="text-expense">
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-expense/10 px-2 py-1 text-xs font-semibold text-expense">
+                            <TrendingDown className="h-3 w-3" />
                             -{formatCurrency(dailyExpense)}
                           </span>
                         )}

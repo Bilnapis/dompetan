@@ -1,5 +1,11 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  TrendingDown,
+  TrendingUp,
+  WalletCards,
+} from "lucide-react";
 import { formatCurrency } from "../lib/helpers";
 import { TransactionItem } from "./TransactionItem";
 import type { TransactionWithDetails } from "../types/database";
@@ -20,6 +26,25 @@ function parseLocalDate(dateStr: string): Date {
 
 function toDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function formatCompactAmount(amount: number): string {
+  if (amount === 0) return "";
+
+  const abs = Math.abs(amount);
+  if (abs >= 1_000_000) {
+    return `${new Intl.NumberFormat("id-ID", {
+      maximumFractionDigits: 1,
+    }).format(amount / 1_000_000)}jt`;
+  }
+
+  if (abs >= 1_000) {
+    return `${new Intl.NumberFormat("id-ID", {
+      maximumFractionDigits: 0,
+    }).format(amount / 1_000)}rb`;
+  }
+
+  return new Intl.NumberFormat("id-ID").format(amount);
 }
 
 // ── Day Detail Bottom Sheet ─────────────────────────────────────────────────
@@ -77,12 +102,11 @@ function DaySheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col justify-end"
-      style={{ background: "rgba(0,0,0,0.55)" }}
+      className="fixed inset-0 z-50 flex flex-col justify-end bg-dark-950/70 backdrop-blur-sm"
       onClick={handleBackdrop}
     >
       <div
-        className="bg-dark-900 rounded-t-3xl overflow-hidden"
+        className="mx-auto w-full max-w-lg bg-dark-900 border-t border-dark-700/70 rounded-t-3xl overflow-hidden shadow-2xl shadow-black/60"
         style={{ animation: "slide-up-sheet 0.28s cubic-bezier(0.16,1,0.3,1) both" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -92,32 +116,39 @@ function DaySheet({
         </div>
 
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 pt-2 pb-3 border-b border-dark-800">
+        <div className="flex items-center gap-3 px-5 pt-2 pb-4 border-b border-dark-800">
           {/* Big day number */}
-          <span className="text-4xl font-bold text-dark-100 leading-none w-12 shrink-0">
-            {dayNum}
-          </span>
+          <div className="w-14 h-14 rounded-2xl bg-primary-500/15 border border-primary-500/25 flex items-center justify-center shrink-0">
+            <span className="text-3xl font-bold text-dark-100 leading-none">
+              {dayNum}
+            </span>
+          </div>
 
           {/* Day badge + month.year */}
           <div className="flex flex-col gap-0.5">
-            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-dark-700 text-[10px] font-semibold text-dark-300 w-fit">
+            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-dark-800 text-[10px] font-semibold text-primary-300 w-fit">
               {dayName}
             </span>
-            <span className="text-xs text-dark-500">{monthYear}</span>
+            <span className="text-xs text-dark-400">{monthYear}</span>
+            <span className="text-[10px] text-dark-500">
+              {txForDay.length} transaksi
+            </span>
           </div>
 
           {/* Spacer */}
           <div className="flex-1" />
 
           {/* Income / Expense totals */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-end gap-1">
             {dailyIncome > 0 && (
-              <span className="text-sm font-semibold text-income">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-income/10 px-2 py-1 text-xs font-semibold text-income">
+                <TrendingUp className="h-3 w-3" />
                 +{formatCurrency(dailyIncome)}
               </span>
             )}
             {dailyExpense > 0 && (
-              <span className="text-sm font-semibold text-expense">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-expense/10 px-2 py-1 text-xs font-semibold text-expense">
+                <TrendingDown className="h-3 w-3" />
                 -{formatCurrency(dailyExpense)}
               </span>
             )}
@@ -274,11 +305,6 @@ export function CalendarView({
     return toDateKey(date) === cycleStartKey;
   }
 
-  function formatAmount(amount: number): string {
-    if (amount === 0) return "";
-    return new Intl.NumberFormat("id-ID").format(amount);
-  }
-
   return (
     <>
       <div className="animate-fade-in">
@@ -307,13 +333,13 @@ export function CalendarView({
         </div>
 
         {/* Calendar Grid */}
-        <div className="border border-dark-700/40 rounded-xl overflow-hidden">
+        <div className="glass rounded-2xl overflow-hidden shadow-xl shadow-black/10">
           {/* Day Headers */}
-          <div className="grid grid-cols-7 border-b border-dark-700/40 bg-dark-800/60">
+          <div className="grid grid-cols-7 border-b border-dark-700/40 bg-dark-950/30">
             {DAY_LABELS.map((day, i) => (
               <div
                 key={day}
-                className={`py-2 text-center text-[10px] font-semibold tracking-wide
+                className={`py-2.5 text-center text-[10px] font-semibold
                   ${i === 0 ? "text-expense/80" : i === 6 ? "text-primary-400" : "text-dark-400"}
                 `}
               >
@@ -335,21 +361,32 @@ export function CalendarView({
                 const isToday = key === todayKey;
                 const isCycleStartDay = isCycleStart(date);
                 const isSelected = key === selectedDateKey;
+                const hasActivity = Boolean(data && (data.income > 0 || data.expense > 0));
+                const txCount = transactions.filter((tx) => tx.transaction_date === key).length;
+                const netAmount = (data?.income ?? 0) - (data?.expense ?? 0);
+                const activityTotal = (data?.income ?? 0) + (data?.expense ?? 0);
+                const incomePercent = activityTotal > 0 ? ((data?.income ?? 0) / activityTotal) * 100 : 0;
+                const expensePercent = activityTotal > 0 ? ((data?.expense ?? 0) / activityTotal) * 100 : 0;
 
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={di}
                     onClick={() => handleDayPress(date)}
                     className={`
-                      relative min-h-[70px] p-1 flex flex-col cursor-pointer
-                      transition-colors duration-150
+                      relative min-h-[82px] p-1.5 flex flex-col text-left cursor-pointer
+                      transition-all duration-150 group
                       ${di < 6 ? "border-r border-dark-700/40" : ""}
                       ${!inCycle ? "opacity-30" : ""}
-                      ${isSelected ? "bg-primary-500/15" : isToday ? "bg-primary-500/10" : "active:bg-dark-800/60"}
+                      ${isSelected ? "bg-primary-500/20 ring-1 ring-inset ring-primary-400/50" : isToday ? "bg-primary-500/10" : "hover:bg-dark-800/45 active:bg-dark-800/70"}
                     `}
                   >
+                    {isCycleStartDay && !isToday && (
+                      <span className="absolute left-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary-400 shadow-[0_0_10px_rgba(96,165,250,0.8)]" />
+                    )}
+
                     {/* Date number */}
-                    <div className="flex items-center gap-0.5 mb-0.5">
+                    <div className="flex items-center justify-between gap-1 mb-1">
                       <span
                         className={`
                           text-[11px] font-semibold leading-none inline-flex items-center justify-center
@@ -369,33 +406,71 @@ export function CalendarView({
                       >
                         {date.getDate()}
                       </span>
-                      {/* Cycle start dot marker */}
-                      {isCycleStartDay && !isToday && (
-                        <span className="text-[6px] text-primary-400 leading-none">●</span>
-                      )}
                     </div>
+
+                    {txCount > 0 && (
+                      <span className="absolute right-1.5 top-1.5 rounded-full bg-dark-800 px-1.5 py-0.5 text-[9px] font-medium text-dark-400">
+                        {txCount}
+                      </span>
+                    )}
 
                     {/* Spacer */}
                     <div className="flex-1" />
 
                     {/* Income amount */}
                     {data && data.income > 0 && (
-                      <p className="text-[9px] font-medium text-primary-400 leading-tight text-right">
-                        {formatAmount(data.income)}
+                      <p className="text-[9px] font-semibold text-income leading-tight text-right truncate">
+                        +{formatCompactAmount(data.income)}
                       </p>
                     )}
 
                     {/* Expense amount */}
                     {data && data.expense > 0 && (
-                      <p className="text-[9px] font-medium text-expense leading-tight text-right">
-                        {formatAmount(data.expense)}
+                      <p className="text-[9px] font-semibold text-expense leading-tight text-right truncate">
+                        -{formatCompactAmount(data.expense)}
                       </p>
                     )}
-                  </div>
+
+                    {hasActivity && (
+                      <div className="mt-1 flex items-center gap-1">
+                        <div className="h-1.5 flex-1 rounded-full bg-dark-800 overflow-hidden flex">
+                          {data.income > 0 && (
+                            <div
+                              className="h-full bg-income/80"
+                              style={{ width: `${incomePercent}%` }}
+                            />
+                          )}
+                          {data.expense > 0 && (
+                            <div
+                              className="h-full bg-expense/80"
+                              style={{ width: `${expensePercent}%` }}
+                            />
+                          )}
+                        </div>
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            netAmount >= 0 ? "bg-income" : "bg-expense"
+                          }`}
+                        />
+                      </div>
+                    )}
+                  </button>
                 );
               })}
             </div>
           ))}
+          <div className="flex items-center justify-between gap-3 border-t border-dark-700/40 bg-dark-950/30 px-3 py-2.5">
+            <div className="flex items-center gap-2 text-[10px] text-dark-500">
+              <span className="h-2 w-2 rounded-full bg-income" />
+              Pemasukan
+              <span className="h-2 w-2 rounded-full bg-expense ml-1" />
+              Pengeluaran
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-dark-500">
+              <WalletCards className="h-3.5 w-3.5" />
+              Ketuk tanggal untuk detail
+            </div>
+          </div>
         </div>
       </div>
 
