@@ -5,6 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { CategoryPickerSheet } from "../components/ui/CategoryPickerSheet";
 import { AccountPickerSheet } from "../components/ui/AccountPickerSheet";
+import { NumpadSheet } from "../components/ui/NumpadSheet";
 import { useCategories } from "../hooks/useCategories";
 import { useAccounts } from "../hooks/useAccounts";
 import { useTransactions } from "../hooks/useTransactions";
@@ -45,6 +46,7 @@ export function TransactionFormPage() {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [showToAccountPicker, setShowToAccountPicker] = useState(false);
+  const [showNumpad, setShowNumpad] = useState(false);
 
   // Fetch categories based on selected type
   const { categories } = useCategories(type);
@@ -54,6 +56,19 @@ export function TransactionFormPage() {
   const selectedCategory = categories.find((c) => c.id === categoryId);
   const selectedAccount = accounts.find((a) => a.id === accountId);
   const selectedToAccount = accounts.find((a) => a.id === toAccountId);
+
+  // Read result back from CalculatorPage
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.calculatorResult !== undefined) {
+      setAmount(state.calculatorResult);
+      // Clear the state so it doesn't re-apply on re-render
+      window.history.replaceState(
+        { ...window.history.state, usr: { ...state, calculatorResult: undefined } },
+        ""
+      );
+    }
+  }, [location.state]);
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -224,18 +239,30 @@ export function TransactionFormPage() {
             autoFocus={!editData}
           />
 
-          <Input
-            type="text"
-            inputMode="numeric"
-            label="Jumlah"
-            placeholder="Rp 0"
-            value={amount ? `Rp ${Number(amount).toLocaleString("id-ID")}` : ""}
-            onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, "");
-              setAmount(val);
-            }}
-            required
-          />
+          {/* Amount — tappable field that opens NumpadSheet */}
+          <div className="w-full">
+            <label className="block text-sm font-medium text-dark-300 mb-1.5">
+              Jumlah <span className="text-expense">*</span>
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowNumpad(true)}
+              className={`
+                w-full px-4 py-2.5 rounded-xl text-left
+                bg-dark-800 border transition-all duration-200
+                hover:border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50
+                ${showNumpad ? "border-primary-500 ring-2 ring-primary-500/30" : "border-dark-700"}
+              `}
+            >
+              {amount ? (
+                <span className="text-dark-100 text-sm font-medium">
+                  Rp {Number(amount).toLocaleString("id-ID")}
+                </span>
+              ) : (
+                <span className="text-dark-500 text-sm">Rp 0</span>
+              )}
+            </button>
+          </div>
 
           {/* Category - Tappable field that opens bottom sheet */}
           {type !== "transfer" && (
@@ -375,6 +402,18 @@ export function TransactionFormPage() {
           title="Ke Pos Keuangan"
         />
       )}
+
+      {/* Numpad Bottom Sheet */}
+      <NumpadSheet
+        isOpen={showNumpad}
+        value={amount}
+        onChange={setAmount}
+        onDone={() => setShowNumpad(false)}
+        onOpenCalculator={() => {
+          setShowNumpad(false);
+          navigate("/calculator", { state: { returnPath: "/transaction/form" } });
+        }}
+      />
     </div>
   );
 }
