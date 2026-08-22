@@ -8,8 +8,8 @@ export function AppLayout() {
       {/* Desktop Sidebar */}
       <Sidebar />
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col lg:ml-64">
+      {/* Main content area — min-w-0 prevents flex-1 from overflowing viewport width */}
+      <div className="flex-1 min-w-0 overflow-x-hidden flex flex-col lg:ml-64">
         <main className="flex-1 pb-20 lg:pb-0 lg:overflow-y-auto">
           <Outlet />
         </main>
