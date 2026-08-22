@@ -15,7 +15,9 @@ export function useAccounts() {
     const { data, error } = await supabase
       .from('accounts_with_balance')
       .select('*')
-      .order('name')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true })
+
 
     if (!error && data) {
       setAccounts(data)
@@ -101,6 +103,27 @@ export function useAccounts() {
     return { error: null }
   }
 
+  const reorderAccounts = async (updates: { id: string; sort_order: number }[]) => {
+    if (!user) return { error: 'Not authenticated' }
+
+    const promises = updates.map((update) =>
+      supabase
+        .from('accounts')
+        .update({ sort_order: update.sort_order } as never)
+        .eq('id', update.id)
+        .eq('user_id', user.id)
+    )
+
+    const results = await Promise.all(promises)
+    const error = results.find((r) => r.error)?.error
+
+    // Tidak perlu fetchAccounts() — local state sudah diupdate secara optimistik
+    // di AccountsPage, dan fetch ulang akan menimpa urutan baru
+    if (error) return { error: error.message }
+
+    return { error: null }
+  }
+
   return {
     accounts,
     loading,
@@ -108,6 +131,7 @@ export function useAccounts() {
     updateAccount,
     deleteAccount,
     adjustBalance,
+    reorderAccounts,
     refreshAccounts: fetchAccounts,
   }
 }

@@ -1,19 +1,71 @@
-import { useState } from 'react'
-import { Plus, Pencil, Trash2, Wallet } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Wallet } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
 import { useAccounts } from '../hooks/useAccounts'
 import { AccountForm } from '../components/AccountForm'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Button } from '../components/ui/Button'
+import { SortableAccountRow } from '../components/SortableAccountRow'
 import { formatCurrency } from '../lib/helpers'
 import type { Account, AccountInsert, AccountUpdate } from '../types/database'
 import { AccountListSkeleton } from '../components/ui/Skeleton'
 
 export function AccountsPage() {
-  const { accounts, loading, addAccount, updateAccount, deleteAccount, adjustBalance } = useAccounts()
+  const { accounts, loading, addAccount, updateAccount, deleteAccount, adjustBalance, reorderAccounts } = useAccounts()
   const [showForm, setShowForm] = useState(false)
   const [editingAcc, setEditingAcc] = useState<Account | null>(null)
 
-  const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0)
+  // Local state untuk optimistic update saat drag
+  const [localAccounts, setLocalAccounts] = useState<Account[]>([])
+
+  // Sync local state saat accounts dari server berubah
+  useEffect(() => {
+    setLocalAccounts(accounts)
+  }, [accounts])
+
+  const totalBalance = localAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0)
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = localAccounts.findIndex((a) => a.id === active.id)
+    const newIndex = localAccounts.findIndex((a) => a.id === over.id)
+
+    const newItems = arrayMove(localAccounts, oldIndex, newIndex)
+    setLocalAccounts(newItems)
+
+    reorderAccounts(
+      newItems.map((item, index) => ({ id: item.id, sort_order: index }))
+    )
+  }
 
   const handleSubmit = async (data: AccountInsert | AccountUpdate, desiredBalance: number) => {
     if (editingAcc) {
@@ -70,7 +122,7 @@ export function AccountsPage() {
       </p>
 
       {/* Total Balance Card */}
-      {!loading && accounts.length > 0 && (
+      {!loading && localAccounts.length > 0 && (
         <div className="glass rounded-2xl p-4 mb-5 flex items-center justify-between">
           <div>
             <p className="text-xs text-dark-400 mb-0.5">Total Saldo Keseluruhan</p>
@@ -84,7 +136,7 @@ export function AccountsPage() {
       {/* Accounts List */}
       {loading ? (
         <AccountListSkeleton count={3} />
-      ) : accounts.length === 0 ? (
+      ) : localAccounts.length === 0 ? (
         <EmptyState
           icon={<Wallet className="w-8 h-8 text-dark-500" />}
           title="Belum ada dompet"
@@ -93,40 +145,27 @@ export function AccountsPage() {
           onAction={() => { setEditingAcc(null); setShowForm(true) }}
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {accounts.map((acc) => (
-            <div
-              key={acc.id}
-              className="glass rounded-2xl flex items-center gap-3 px-4 py-3 group hover:bg-dark-800/50 transition-colors"
-            >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-primary-500/10">
-                <Wallet className="w-4 h-4 text-primary-400" />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-dark-200 truncate">{acc.name}</p>
-                <p className={`text-xs mt-0.5 font-semibold ${acc.balance && acc.balance < 0 ? 'text-expense' : 'text-primary-400'}`}>
-                  {formatCurrency(acc.balance || 0)}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => handleEdit(acc)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-dark-400 hover:text-primary-400 hover:bg-dark-700 transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(acc.id)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-dark-400 hover:text-expense hover:bg-dark-700 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={localAccounts.map((a) => a.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {localAccounts.map((acc) => (
+                <SortableAccountRow
+                  key={acc.id}
+                  account={acc}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Account Form Modal */}
