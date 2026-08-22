@@ -142,7 +142,7 @@ export function TransactionFormPage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto bg-dark-900 min-h-screen text-dark-100 flex flex-col">
+    <div className="max-w-lg mx-auto bg-dark-900 min-h-screen text-dark-100 flex flex-col lg:min-h-0 lg:mt-8 lg:mb-8 lg:rounded-2xl lg:border lg:border-dark-700/50 lg:shadow-2xl lg:overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-dark-800 sticky top-0 bg-dark-900/95 backdrop-blur-sm z-10">
         <button

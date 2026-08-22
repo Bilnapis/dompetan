@@ -52,8 +52,11 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-6">
+    <div className="max-w-lg mx-auto lg:max-w-3xl px-4 lg:px-8 pt-6">
       <h1 className="text-xl font-bold text-dark-100 mb-6">Profil</h1>
+
+      {/* Desktop: two-column layout */}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-6">
 
       {/* User Info Card */}
       <div className="glass rounded-2xl p-5 mb-4">
@@ -188,15 +191,19 @@ export function ProfilePage() {
         </div>
       )}
 
-      {/* Logout */}
-      <Button
-        variant="danger"
-        fullWidth
-        onClick={signOut}
-        icon={<LogOut className="w-4 h-4" />}
-      >
-        Keluar dari Akun
-      </Button>
+      </div> {/* end lg:grid */}
+
+      {/* Logout — mobile only (desktop has sidebar) */}
+      <div className="mt-4 lg:hidden">
+        <Button
+          variant="danger"
+          fullWidth
+          onClick={signOut}
+          icon={<LogOut className="w-4 h-4" />}
+        >
+          Keluar dari Akun
+        </Button>
+      </div>
     </div>
   )
 }

@@ -106,7 +106,7 @@ export function CategoriesPage() {
   ];
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-6">
+    <div className="max-w-lg mx-auto lg:max-w-none px-4 lg:px-8 pt-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-bold text-dark-100">Kategori</h1>
@@ -159,7 +159,7 @@ export function CategoriesPage() {
           }}
         />
       ) : (
-        <div className="glass rounded-2xl overflow-hidden divide-y divide-dark-700/50">
+        <div className="lg:glass lg:rounded-2xl lg:overflow-hidden">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -169,6 +169,7 @@ export function CategoriesPage() {
               items={localCategories.map((c) => c.id)}
               strategy={verticalListSortingStrategy}
             >
+              <div className="divide-y divide-dark-700/50 lg:grid lg:grid-cols-2 lg:divide-y-0 lg:gap-3">
               {localCategories.map((cat) => (
                 <SortableCategoryRow
                   key={cat.id}
@@ -177,6 +178,7 @@ export function CategoriesPage() {
                   onDelete={handleDelete}
                 />
               ))}
+              </div>
             </SortableContext>
           </DndContext>
         </div>

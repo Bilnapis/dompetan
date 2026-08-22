@@ -71,7 +71,7 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-6">
+    <div className="max-w-lg mx-auto lg:max-w-none px-4 lg:px-8 pt-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -80,9 +80,10 @@ export function DashboardPage() {
             {user?.email}
           </p>
         </div>
-        <div className="flex items-center gap-1">
+        {/* Mobile-only header actions — desktop has sidebar */}
+        <div className="flex items-center gap-1 lg:hidden">
           <button
-            onClick={() => navigate("/profile")}
+            onClick={() => navigate('/profile')}
             className="w-10 h-10 rounded-xl flex items-center justify-center text-dark-400 hover:text-primary-400 hover:bg-dark-800 transition-colors"
             title="Profil"
           >
@@ -99,7 +100,7 @@ export function DashboardPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-3 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
         {/* Balance Card */}
         <div className="glass rounded-2xl p-5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
@@ -137,7 +138,7 @@ export function DashboardPage() {
         </div>
 
         {/* Income & Expense Row */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 lg:contents">
           <div className="glass rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-lg bg-income/15 flex items-center justify-center">

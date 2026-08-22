@@ -300,7 +300,8 @@ export function TransactionsPage() {
         cycle.end,
       );
       const hasTransactions = yearTransactions.some(
-        (t) => t.transaction_date >= cycle.start && t.transaction_date <= cycle.end,
+        (t) =>
+          t.transaction_date >= cycle.start && t.transaction_date <= cycle.end,
       );
 
       // Skip future months only when there is no transaction data in that cycle.
@@ -325,7 +326,7 @@ export function TransactionsPage() {
   const todayStr = toDateInputValue(new Date());
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-6">
+    <div className="max-w-lg mx-auto lg:max-w-none px-4 lg:px-8 pt-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-bold text-dark-100">Transaksi</h1>
@@ -709,73 +710,133 @@ export function TransactionsPage() {
                 title="Belum ada transaksi"
                 description="Transaksi yang kamu buat akan muncul di sini"
                 actionLabel="Tambah Transaksi"
-                onAction={() => navigate("/transaction/form")}
+                onAction={() => navigate('/transaction/form')}
               />
             )
           ) : (
-            <div className="space-y-4 mb-6">
-              {groupedTransactions.map(([date, txs]) => {
-                const groupDate = parseLocalDate(date);
-                const dayNum = groupDate.getDate();
-                const dayName = DAY_NAMES_SHORT[groupDate.getDay()];
-                const monthYear = `${String(groupDate.getMonth() + 1).padStart(2, "0")}.${groupDate.getFullYear()}`;
-                const dailyIncome = txs
-                  .filter((t) => t.type === "income" && t.category_id !== null)
-                  .reduce((sum, t) => sum + Number(t.amount), 0);
-                const dailyExpense = txs
-                  .filter((t) => t.type === "expense" && t.category_id !== null)
-                  .reduce((sum, t) => sum + Number(t.amount), 0);
+            <>
+              {/* ── DESKTOP TABLE VIEW ── */}
+              <div className="hidden lg:block">
+                <div className="glass rounded-2xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-dark-700/50">
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-dark-400 uppercase tracking-wide w-28">Tanggal</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-dark-400 uppercase tracking-wide">Kategori</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-dark-400 uppercase tracking-wide">Catatan</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-dark-400 uppercase tracking-wide">Dompet</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-dark-400 uppercase tracking-wide">Jumlah</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-dark-700/30">
+                      {groupedTransactions.map(([date, txs]) => {
+                        const groupDate = parseLocalDate(date);
+                        const dayNum = groupDate.getDate();
+                        const dayName = DAY_NAMES_SHORT[groupDate.getDay()];
+                        const monthYear = `${String(groupDate.getMonth() + 1).padStart(2, '0')}.${groupDate.getFullYear()}`;
+                        return txs.map((tx, idx) => {
+                          const isIncome = tx.type === 'income';
+                          const isTransfer = tx.category_id === null;
+                          return (
+                            <tr
+                              key={tx.id}
+                              onClick={() => handleEdit(tx)}
+                              className="hover:bg-dark-800/50 cursor-pointer transition-colors group"
+                            >
+                              {/* Date cell — only on first row of the group */}
+                              {idx === 0 ? (
+                                <td className="px-4 py-3 align-top" rowSpan={txs.length}>
+                                  <div className="flex flex-col">
+                                    <span className="text-2xl font-bold text-dark-100 leading-none">{dayNum}</span>
+                                    <span className="text-[10px] font-semibold text-primary-300 mt-0.5">{dayName}</span>
+                                    <span className="text-[10px] text-dark-500">{monthYear}</span>
+                                  </div>
+                                </td>
+                              ) : null}
+                              {/* Category */}
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-sm ${isTransfer ? 'bg-primary-500/10' : isIncome ? 'bg-income/10' : 'bg-expense/10'}`}>
+                                    {tx.category?.icon ?? (isTransfer ? '↔' : isIncome ? '↑' : '↓')}
+                                  </div>
+                                  <span className="text-dark-200 text-xs">{tx.category?.name ?? (isTransfer ? 'Transfer' : 'Tanpa Kategori')}</span>
+                                </div>
+                              </td>
+                              {/* Note */}
+                              <td className="px-4 py-3 text-dark-400 text-xs max-w-[200px] truncate">
+                                {tx.note ?? <span className="text-dark-600">—</span>}
+                              </td>
+                              {/* Account */}
+                              <td className="px-4 py-3 text-dark-400 text-xs">
+                                {tx.account?.name ?? <span className="text-dark-600">—</span>}
+                              </td>
+                              {/* Amount */}
+                              <td className={`px-4 py-3 text-right font-semibold text-sm ${isTransfer ? 'text-primary-400' : isIncome ? 'text-income' : 'text-expense'}`}>
+                                {isIncome ? '+' : '-'}{formatCurrency(Number(tx.amount))}
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-                return (
-                  <div key={date} className="glass rounded-2xl overflow-hidden">
-                    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-dark-700/50">
-                      <div className="w-14 h-14 rounded-2xl bg-primary-500/15 border border-primary-500/25 flex items-center justify-center shrink-0">
-                        <span className="text-3xl font-bold text-dark-100 leading-none">
-                          {dayNum}
-                        </span>
+              {/* ── MOBILE CARD VIEW ── */}
+              <div className="lg:hidden space-y-4 mb-6">
+                {groupedTransactions.map(([date, txs]) => {
+                  const groupDate = parseLocalDate(date);
+                  const dayNum = groupDate.getDate();
+                  const dayName = DAY_NAMES_SHORT[groupDate.getDay()];
+                  const monthYear = `${String(groupDate.getMonth() + 1).padStart(2, '00')}.${groupDate.getFullYear()}`;
+                  const dailyIncome = txs
+                    .filter((t) => t.type === 'income' && t.category_id !== null)
+                    .reduce((sum, t) => sum + Number(t.amount), 0);
+                  const dailyExpense = txs
+                    .filter((t) => t.type === 'expense' && t.category_id !== null)
+                    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+                  return (
+                    <div key={date} className="glass rounded-2xl overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 py-3.5 border-b border-dark-700/50">
+                        <div className="w-14 h-14 rounded-2xl bg-primary-500/15 border border-primary-500/25 flex items-center justify-center shrink-0">
+                          <span className="text-3xl font-bold text-dark-100 leading-none">{dayNum}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-dark-800 text-[10px] font-semibold text-primary-300 w-fit">{dayName}</span>
+                          <span className="text-xs text-dark-400">{monthYear}</span>
+                          <span className="text-[10px] text-dark-500">{txs.length} transaksi</span>
+                        </div>
+                        <div className="flex-1" />
+                        <div className="flex flex-col items-end gap-1">
+                          {dailyIncome > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-lg bg-income/10 px-2 py-1 text-xs font-semibold text-income">
+                              <TrendingUp className="h-3 w-3" />+{formatCurrency(dailyIncome)}
+                            </span>
+                          )}
+                          {dailyExpense > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-lg bg-expense/10 px-2 py-1 text-xs font-semibold text-expense">
+                              <TrendingDown className="h-3 w-3" />-{formatCurrency(dailyExpense)}
+                            </span>
+                          )}
+                        </div>
                       </div>
-
-                      <div className="flex flex-col gap-0.5">
-                        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-dark-800 text-[10px] font-semibold text-primary-300 w-fit">
-                          {dayName}
-                        </span>
-                        <span className="text-xs text-dark-400">{monthYear}</span>
-                        <span className="text-[10px] text-dark-500">
-                          {txs.length} transaksi
-                        </span>
-                      </div>
-
-                      <div className="flex-1" />
-
-                      <div className="flex flex-col items-end gap-1">
-                        {dailyIncome > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-income/10 px-2 py-1 text-xs font-semibold text-income">
-                            <TrendingUp className="h-3 w-3" />
-                            +{formatCurrency(dailyIncome)}
-                          </span>
-                        )}
-                        {dailyExpense > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-expense/10 px-2 py-1 text-xs font-semibold text-expense">
-                            <TrendingDown className="h-3 w-3" />
-                            -{formatCurrency(dailyExpense)}
-                          </span>
-                        )}
+                      <div className="divide-y divide-dark-700/50">
+                        {txs.map((tx) => (
+                          <TransactionItem
+                            key={tx.id}
+                            transaction={tx}
+                            onEdit={handleEdit}
+                            showDate={false}
+                          />
+                        ))}
                       </div>
                     </div>
-                    <div className="divide-y divide-dark-700/50">
-                      {txs.map((tx) => (
-                        <TransactionItem
-                          key={tx.id}
-                          transaction={tx}
-                          onEdit={handleEdit}
-                          showDate={false}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </>
       )}

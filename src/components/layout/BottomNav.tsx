@@ -52,7 +52,7 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-dark-900/85 backdrop-blur-xl border-t border-dark-700/50">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-dark-900/85 backdrop-blur-xl border-t border-dark-700/50 lg:hidden">
       <div className="max-w-lg mx-auto flex items-center justify-around px-2 py-2 relative">
         {/* Left items */}
         {leftItems.map(renderItem)}

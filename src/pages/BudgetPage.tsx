@@ -68,7 +68,7 @@ export function BudgetPage() {
   const { categories, reorderCategories } = useCategories();
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-6 pb-24">
+    <div className="max-w-lg mx-auto lg:max-w-none px-4 lg:px-8 pt-6 pb-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-bold text-dark-100">Budget</h1>

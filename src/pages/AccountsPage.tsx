@@ -52,7 +52,7 @@ export function AccountsPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-6">
+    <div className="max-w-lg mx-auto lg:max-w-none px-4 lg:px-8 pt-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-dark-100">Pos Keuangan</h1>
@@ -93,11 +93,11 @@ export function AccountsPage() {
           onAction={() => { setEditingAcc(null); setShowForm(true) }}
         />
       ) : (
-        <div className="glass rounded-2xl overflow-hidden divide-y divide-dark-700/50">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {accounts.map((acc) => (
             <div
               key={acc.id}
-              className="flex items-center gap-3 px-4 py-3 group hover:bg-dark-800/50 transition-colors"
+              className="glass rounded-2xl flex items-center gap-3 px-4 py-3 group hover:bg-dark-800/50 transition-colors"
             >
               <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-primary-500/10">
                 <Wallet className="w-4 h-4 text-primary-400" />
